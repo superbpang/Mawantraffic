@@ -290,54 +290,52 @@ function tick() {
 
 function updateCameras(cameras) {
   const root = document.querySelector("#cameras");
+  const gaps = document.querySelector("#camera-gaps");
   const seen = new Set();
   cameras.forEach((camera) => {
+    const wantImage = camera.status === "ok" || camera.lastGoodAt;
+    if (!wantImage) return;
     seen.add(camera.id);
-    let figure = root.querySelector(`[data-id="${camera.id}"]`);
+    let figure = root.querySelector(`figure[data-id="${camera.id}"]`);
     if (!figure) {
       figure = document.createElement("figure");
       figure.dataset.id = camera.id;
-      root.append(figure);
-    }
-    let captionEl = figure.querySelector("figcaption");
-    if (!captionEl) {
-      captionEl = document.createElement("figcaption");
+      const captionEl = document.createElement("figcaption");
       figure.append(captionEl);
     }
-    captionEl.textContent = camera.message ? `${camera.name}，暫時沒有畫面` : camera.name;
-    const wantImage = camera.status === "ok" || camera.lastGoodAt;
+    root.append(figure);
+    figure.querySelector("figcaption").textContent = camera.name;
     const token = camera.lastGoodAt || camera.fetchedAt || "";
     const image = figure.querySelector("img");
-    if (wantImage) {
-      figure.querySelector(".blank")?.remove();
-      const picture = image || document.createElement("img");
-      picture.alt = camera.name;
-      if (!image) figure.prepend(picture);
-      if (token && picture.dataset.token !== token && picture.dataset.pending !== token) {
-        picture.dataset.pending = token;
-        const candidate = new Image();
-        const url = `/cameras/${encodeURIComponent(camera.id)}.jpg?t=${encodeURIComponent(token)}`;
-        candidate.onload = () => {
-          if (picture.dataset.pending !== token) return;
-          picture.src = url;
-          picture.dataset.token = token;
-          delete picture.dataset.pending;
-        };
-        candidate.onerror = () => {
-          if (picture.dataset.pending === token) delete picture.dataset.pending;
-        };
-        candidate.src = url;
-      }
-    } else if (!figure.querySelector(".blank")) {
-      image?.remove();
-      const blank = document.createElement("div");
-      blank.className = "blank";
-      blank.textContent = "鏡頭暫時沒有畫面";
-      figure.prepend(blank);
+    const picture = image || document.createElement("img");
+    picture.alt = camera.name;
+    if (!image) figure.prepend(picture);
+    if (token && picture.dataset.token !== token && picture.dataset.pending !== token) {
+      picture.dataset.pending = token;
+      const candidate = new Image();
+      const url = `/cameras/${encodeURIComponent(camera.id)}.jpg?t=${encodeURIComponent(token)}`;
+      candidate.onload = () => {
+        if (picture.dataset.pending !== token) return;
+        picture.src = url;
+        picture.dataset.token = token;
+        delete picture.dataset.pending;
+      };
+      candidate.onerror = () => {
+        if (picture.dataset.pending === token) delete picture.dataset.pending;
+      };
+      candidate.src = url;
     }
   });
   root.querySelectorAll("figure").forEach((figure) => {
     if (!seen.has(figure.dataset.id)) figure.remove();
+  });
+  gaps.replaceChildren();
+  cameras.forEach((camera) => {
+    if (camera.status === "ok" || camera.lastGoodAt) return;
+    const line = document.createElement("p");
+    const reason = camera.status === "no-service" ? "暫時未能提供服務" : "暫時未能更新";
+    line.textContent = `${camera.name}鏡頭${reason}。`;
+    gaps.append(line);
   });
 }
 

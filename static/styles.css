@@ -138,15 +138,16 @@ main {
 
 .cameras { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .cameras figure { margin: 0; min-width: 0; }
-.cameras img, .cameras .blank {
+.cameras img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
   background: #e4ebe7;
   border-radius: 12px;
 }
-.blank { display: grid; place-items: center; text-align: center; padding: 8px; }
 .cameras figcaption { margin-top: 4px; font-size: 0.82rem; }
+.camera-gaps:empty { display: none; }
+.camera-gaps p { margin: 8px 0 0; color: var(--muted); font-size: 0.86rem; }
 
 footer { padding: 18px 0 32px; font-size: 0.86rem; }
 footer p { margin: 0; }

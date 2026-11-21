@@ -206,6 +206,29 @@ class LiveParseTests(unittest.TestCase):
         self.assertEqual([item["code"] for item in parsed["warnings"]], ["WTS"])
         self.assertIsNotNone(parsed["wind"])
 
+    def test_service_placeholder_is_not_shown_as_a_camera_image(self):
+        store = live.CameraStore()
+        gif = b"GIF89a" + b"\x00" * 16
+        jpeg = b"\xff\xd8\xff" + b"\x00" * 16
+        original = live._get
+
+        def fake_get(url, timeout=8):
+            body = gif if url.endswith("TC560F.JPG") else jpeg
+            return body, {}
+
+        live._get = fake_get
+        try:
+            image, _, meta = store.get("TC560F")
+            self.assertEqual(image, b"")
+            self.assertEqual(meta["status"], "no-service")
+            self.assertEqual(meta["message"], "運輸署暫時未能提供服務")
+            image, _, meta = store.get("TC551F")
+            self.assertTrue(image.startswith(b"\xff\xd8"))
+            self.assertEqual(meta["status"], "ok")
+            self.assertEqual(meta["message"], "")
+        finally:
+            live._get = original
+
 
 if __name__ == "__main__":
     unittest.main()

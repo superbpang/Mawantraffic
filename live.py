@@ -348,6 +348,22 @@ def load_weather() -> dict:
     return parse_weather(json.loads(body))
 
 
+def snapshot_kind(body: bytes) -> str:
+    if body[:6] in {b"GIF87a", b"GIF89a"}:
+        return "gif"
+    if body[:2] == b"\xff\xd8":
+        return "jpeg"
+    return "other"
+
+
+def _camera_message(status: str) -> str:
+    if status == "ok":
+        return ""
+    if status == "no-service":
+        return "運輸署暫時未能提供服務"
+    return "暫時未能更新"
+
+
 class CameraStore:
     def __init__(self):
         self.lock = threading.Lock()
@@ -364,7 +380,7 @@ class CameraStore:
                 return current.get("body") or b"", "image/jpeg", self._meta(camera_id, current, True)
         try:
             body, headers = _get(CAMERA_URL.format(camera_id=camera_id), timeout=8)
-            kind = "gif" if body[:6] in {b"GIF87a", b"GIF89a"} else "jpeg" if body[:2] == b"\xff\xd8" else "other"
+            kind = snapshot_kind(body)
             fetched = datetime.now(HK)
             with self.lock:
                 previous = self.frames.get(camera_id, {})
@@ -406,7 +422,7 @@ class CameraStore:
             "lastGoodAt": good.isoformat() if good else None,
             "stale": age is None or age > 240,
             "cacheHit": cache_hit,
-            "message": "鏡頭暫時沒有畫面" if current.get("status") != "ok" else "",
+            "message": _camera_message(current.get("status") or "empty"),
         }
 
 
