@@ -93,14 +93,34 @@ function usefulNotes(notes) {
   });
 }
 
-function tripKind(trip, fallback) {
-  return trip.timeLabel === "預計到達" ? "arrive" : fallback;
+function tripKind(trip) {
+  return trip.timeLabel === "預計到達" ? "arrive" : "leave";
 }
 
-function tripItems(trips, today, fallback, compact) {
+function clockOf(iso) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("zh-HK", {
+    timeZone: "Asia/Hong_Kong",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+}
+
+function staleNote(slot) {
+  if (!slot?.stale || !slot.value) return "";
+  const time = clockOf(slot.fetchedAt);
+  return time
+    ? `<p>未能更新。以下為 ${escapeHtml(time)} 的資料。</p>`
+    : "<p>未能更新。以下為較早的資料。</p>";
+}
+
+function tripItems(trips, today, compact) {
   return trips.slice(0, 3).map((trip) => {
     const iso = trip.time || trip.eta;
-    const kind = tripKind(trip, fallback);
+    const kind = tripKind(trip);
     const tag = shortNote(trip.note);
     return `
       <li>
@@ -112,13 +132,13 @@ function tripItems(trips, today, fallback, compact) {
   }).join("");
 }
 
-function lineHtml(id, code, where, trips, today, fallback, more) {
-  const kinds = trips.map((trip) => tripKind(trip, fallback));
+function lineHtml(id, code, where, trips, today, more) {
+  const kinds = trips.map((trip) => tripKind(trip));
   const compact = kinds.length > 0 && kinds.every((kind) => kind === kinds[0]);
   const verb = compact ? (kinds[0] === "arrive" ? "到達" : "開出") : "";
   const place = verb ? `${where} · ${verb}` : where;
   const times = trips.length
-    ? `<ol class="times">${tripItems(trips, today, fallback, compact)}</ol>`
+    ? `<ol class="times">${tripItems(trips, today, compact)}</ol>`
     : `<p class="none">暫無班次</p>`;
   return `
     <details class="fold" data-id="${escapeHtml(id)}" ${state.open[id] ? "open" : ""}>
@@ -148,7 +168,7 @@ function serviceLines(board, direction, ids) {
       ${notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}
       <p><a href="${escapeHtml(service.sourceUrl)}">班表</a> · <a href="${escapeHtml(service.fareUrl)}">${escapeHtml(service.fareText)}</a></p>
     `;
-    return lineHtml(`${service.id}-${direction}`, service.route, where, leg.upcoming, today, "leave", more);
+    return lineHtml(`${service.id}-${direction}`, service.route, where, leg.upcoming, today, more);
   }).join("");
 }
 
@@ -159,7 +179,7 @@ function kmbLine(board, direction) {
   const where = direction === "from-mawan" ? "往九龍站" : "由九龍站";
   const id = `kmb-${direction}`;
   if (!value) {
-    return lineHtml(id, "230R", where, [], today, "arrive", "<p>暫時未能讀取到站時間。</p>");
+    return lineHtml(id, "230R", where, [], today, "<p>暫時未能讀取到站時間。</p>");
   }
   const trips = value.trips.filter((trip) => trip.direction === direction).slice(0, 3);
   const stop = direction === "to-mawan" ? value.originTo : value.originFrom;
@@ -171,17 +191,22 @@ function kmbLine(board, direction) {
     ${stale}
     <p><a href="${escapeHtml(value.fareUrl)}">${escapeHtml(value.fareText)}</a></p>
   `;
-  return lineHtml(id, "230R", where, trips, today, "arrive", more);
+  return lineHtml(id, "230R", where, trips, today, more);
 }
 
 function alertHtml(board) {
   const parts = [];
-  const weather = board.live?.weather?.value;
+  const weatherSlot = board.live?.weather;
+  const weather = weatherSlot?.value;
   const warnings = weather?.warnings || [];
   if (warnings.length) {
     const names = warnings.map((item) => item.name).join("、");
     const lines = (weather.wind?.lines || []).map((line) => `<p>${escapeHtml(line)}</p>`).join("");
-    parts.push(`<details class="fold alert" data-id="weather" ${state.open.weather ? "open" : ""}><summary><span class="name">天氣</span><span class="aside">${escapeHtml(names)}</span></summary><div class="more">${lines || "<p>生效中。</p>"}</div></details>`);
+    const body = weatherSlot.stale
+      ? `${staleNote(weatherSlot)}<p>警告狀態未能更新，未必仍然生效。</p>${lines}`
+      : (lines || "<p>生效中。</p>");
+    const aside = weatherSlot.stale ? `${names} · 未能更新` : names;
+    parts.push(`<details class="fold alert" data-id="weather" ${state.open.weather ? "open" : ""}><summary><span class="name">天氣</span><span class="aside">${escapeHtml(aside)}</span></summary><div class="more">${body}</div></details>`);
   }
   const notice = (board.notices || []).find((item) => item.appliesToday);
   if (notice) {
@@ -194,12 +219,16 @@ function alertHtml(board) {
 }
 
 function roadHeadline(board) {
-  const roads = board.live?.speeds?.value?.roads || [];
+  const speeds = board.live?.speeds;
+  const roads = speeds?.value?.roads || [];
+  const stale = speeds?.stale && speeds.value ? " · 未能更新" : "";
   if (roads.length) {
-    return roads.map((road) => `${road.road} ${road.speed}`).join(" · ");
+    return roads.map((road) => `${road.road} ${road.speed}`).join(" · ") + stale;
   }
-  if ((board.live?.news?.value?.messages || []).length) return "有特別交通消息";
-  if (!board.live?.speeds?.value) return "暫時未能更新";
+  if ((board.live?.news?.value?.messages || []).length) {
+    return board.live.news.stale ? "有特別交通消息 · 未能更新" : "有特別交通消息";
+  }
+  if (!speeds?.value) return "暫時未能更新";
   return "暫無特別消息";
 }
 
@@ -210,15 +239,17 @@ function roadHtml(board) {
   const messages = news.value?.messages || [];
   const newsBody = !news.value
     ? "<p>交通消息暫時未能更新。</p>"
-    : messages.length
+    : `${staleNote(news)}${messages.length
       ? messages.map((item) => `<p><strong>${escapeHtml(item.heading)}</strong> ${escapeHtml(item.detail)}</p>`).join("")
-      : "<p>暫無影響往返馬灣路線的特別消息。</p>";
-  const speedBody = (speeds.value?.roads || []).map((road) => `
+      : "<p>暫無影響往返馬灣路線的特別消息。</p>"}`;
+  const speedBody = !speeds.value
+    ? "<p>暫無車速數據。</p>"
+    : `${staleNote(speeds)}${(speeds.value.roads || []).map((road) => `
     <p>${escapeHtml(road.road)} ${escapeHtml(road.speed)} 公里/小時</p>
-  `).join("") || "<p>暫無車速數據。</p>";
-  const journeyBody = (journey.value?.rows || []).length
-    ? `<p>南昌站往機場：${journey.value.rows.map((row) => `${escapeHtml(row.to.includes("三號") ? "三號幹線" : "八號幹線")}約 ${escapeHtml(row.minutes)} 分鐘`).join("，")}。上述時間並非馬灣島內車程。</p>`
-    : "<p>暫無南昌站往機場的行車時間。</p>";
+  `).join("") || "<p>暫無車速數據。</p>"}`;
+  const journeyBody = !journey.value?.rows?.length
+    ? `<p>${journey?.stale ? "行車時間暫時未能更新。" : "暫無南昌站往機場的行車時間。"}</p>`
+    : `${staleNote(journey)}<p>南昌站往機場：${journey.value.rows.map((row) => `${escapeHtml(row.to.includes("三號") ? "三號幹線" : "八號幹線")}約 ${escapeHtml(row.minutes)} 分鐘`).join("，")}。上述時間並非馬灣島內車程。</p>`;
   return `
     ${newsBody}
     ${speedBody}
