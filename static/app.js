@@ -139,7 +139,7 @@ function tripItems(trips, today, compact) {
   }).join("");
 }
 
-function lineHtml(id, code, where, modeLabel, trips, today, more) {
+function lineHtml(id, code, stop, where, modeLabel, trips, today, more) {
   const kinds = trips.map((trip) => tripKind(trip));
   const compact = kinds.length > 0 && kinds.every((kind) => kind === kinds[0]);
   const action = compact ? (kinds[0] === "arrive" ? "到達" : "開出") : "";
@@ -153,6 +153,7 @@ function lineHtml(id, code, where, modeLabel, trips, today, more) {
       <summary>
         <span class="badge">${escapeHtml(code)}</span>
         <span class="going">
+          <span class="stop">${escapeHtml(stop)}</span>
           <span class="where">${escapeHtml(where)}</span>
           ${meta ? `<span class="meta">${escapeHtml(meta)}</span>` : ""}
         </span>
@@ -163,13 +164,19 @@ function lineHtml(id, code, where, modeLabel, trips, today, more) {
   `;
 }
 
+function boundLabel(destination) {
+  if (destination.includes("珀欣")) return "往珀欣路";
+  if (destination.includes("碼頭")) return "往珀麗灣碼頭";
+  return "往珀麗灣";
+}
+
 function serviceLines(board, direction, ids) {
   const today = hkDate(board.now);
   const services = ids.map((id) => board.services.find((service) => service.id === id)).filter(Boolean);
   return services.map((service) => {
     const leg = service.directions[direction];
     const place = DEST[service.id];
-    const where = direction === "from-mawan" ? `往${place}` : `由${place}`;
+    const where = direction === "from-mawan" ? `往${place}` : boundLabel(leg.destination);
     const notes = usefulNotes(service.notes);
     const meaning = service.mode === "ferry"
       ? "所示時間為碼頭關閘時間，而非船隻到達時間。"
@@ -181,7 +188,7 @@ function serviceLines(board, direction, ids) {
       <p><a href="${escapeHtml(service.sourceUrl)}">班表</a> · <a href="${escapeHtml(service.fareUrl)}">${escapeHtml(service.fareText)}</a></p>
     `;
     const modeLabel = service.mode === "ferry" ? "渡輪" : "巴士";
-    return lineHtml(`${service.id}-${direction}`, service.route, where, modeLabel, leg.upcoming, today, more);
+    return lineHtml(`${service.id}-${direction}`, service.route, leg.boardStop, where, modeLabel, leg.upcoming, today, more);
   }).join("");
 }
 
@@ -189,13 +196,15 @@ function kmbLine(board, direction) {
   const today = hkDate(board.now);
   const slot = board.live?.kmb;
   const value = slot?.value;
-  const where = direction === "from-mawan" ? "往九龍站" : "由九龍站";
+  const where = direction === "from-mawan" ? "往九龍站" : "往珀欣路";
   const id = `kmb-${direction}`;
+  const stop = !value
+    ? (direction === "from-mawan" ? "馬灣（珀欣路）" : "九龍站")
+    : (direction === "to-mawan" ? value.originTo : value.originFrom);
   if (!value) {
-    return lineHtml(id, "230R", where, "九巴", [], today, "<p>暫時未能讀取九巴到站時間。</p>");
+    return lineHtml(id, "230R", stop, where, "九巴", [], today, "<p>暫時未能讀取九巴到站時間。</p>");
   }
   const trips = value.trips.filter((trip) => trip.direction === direction).slice(0, 3);
-  const stop = direction === "to-mawan" ? value.originTo : value.originFrom;
   const dest = direction === "to-mawan" ? value.destinationTo : value.destinationFrom;
   const more = `
     <p>九巴，由${escapeHtml(stop)}開往${escapeHtml(dest)}。</p>
@@ -203,7 +212,7 @@ function kmbLine(board, direction) {
     ${staleNote(slot)}
     <p><a href="${escapeHtml(value.fareUrl)}">${escapeHtml(value.fareText)}</a></p>
   `;
-  return lineHtml(id, "230R", where, "九巴", trips, today, more);
+  return lineHtml(id, "230R", stop, where, "九巴", trips, today, more);
 }
 
 function alertHtml(board) {
