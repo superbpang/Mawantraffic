@@ -9,7 +9,7 @@
 <body>
   <header class="top">
     <h1>馬灣交通</h1>
-    <p id="clock" class="clock">正在讀取</p>
+    <p id="clock" class="clock" aria-live="polite"><span id="day"></span><strong id="time">正在讀取</strong><span id="fail"></span></p>
   </header>
   <main>
     <section id="alerts" class="alerts" aria-live="polite"></section>
@@ -21,20 +21,21 @@
       <h2 id="back-title">往馬灣</h2>
       <div id="back" class="lines"></div>
     </section>
-    <details id="road" class="fold" data-id="road">
+    <details id="road" class="fold panel" data-id="road">
       <summary>
         <span class="name">路面</span>
         <span id="road-summary" class="aside"></span>
       </summary>
       <div class="more">
         <div id="road-body"></div>
+        <p class="label">閉路電視</p>
         <div id="cameras" class="cameras"></div>
         <div id="camera-gaps" class="camera-gaps"></div>
       </div>
     </details>
   </main>
   <footer>
-    <p>渡輪及居民巴士只顯示開出時間，並無船隻或巴士位置。九巴有到站時間時，才顯示到達。</p>
+    <p>渡輪及居民巴士只顯示開出時間，不顯示船隻或巴士位置。九巴有到站時間時，才顯示到達時間。</p>
   </footer>
   <script src="/app.js"></script>
 </body>

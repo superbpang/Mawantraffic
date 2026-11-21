@@ -278,7 +278,7 @@ def parse_speeds(body: bytes, detectors: list[dict]) -> dict:
         "sourceName": "運輸署主要道路原始車速",
         "sourceUrl": "https://data.gov.hk/tc-data/dataset/hk-td-sm_4-traffic-data-strategic-major-roads",
         "omitted": ["青嶼幹線", "青馬大橋", "汲水門大橋", "馬灣路", "長青公路"],
-        "omittedReason": "偵測器名稱表沒有這些路段的有效車速，只顯示消息同鏡頭。",
+        "omittedReason": "這些路段的偵測器沒有有效車速，只顯示交通消息及閉路電視。",
     }
 
 
