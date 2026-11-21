@@ -52,6 +52,17 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(holiday_saturday[0]["clock"], "07:40")
         self.assertEqual(sunday[0]["clock"], "07:40")
 
+    def test_nr332_kwai_fong_does_not_pass_tsing_yi(self):
+        directions = route("nr332")["directions"]
+        for direction in directions.values():
+            for table in ("weekday", "weekend"):
+                notes = [item.get("note") or "" for item in direction[table]]
+                self.assertTrue(notes)
+                self.assertTrue(all("青衣" not in note for note in notes))
+        overnight = catalog.upcoming(route("nr332"), "from-mawan", at("2026-11-22T00:20:00"))
+        trip = next(item for item in overnight if item["clock"] == "01:00")
+        self.assertEqual(trip["note"], "")
+
     def test_nr331s_keeps_the_last_hour_gap(self):
         times = catalog.upcoming(route("nr331s"), "to-mawan", at("2026-11-21T22:40:00"))
         self.assertEqual([item["clock"] for item in times[:2]], ["22:40", "23:40"])

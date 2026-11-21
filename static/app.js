@@ -53,14 +53,12 @@ function remainParts(iso, kind, compact, now = new Date()) {
   if (left <= 0) return { amount: kind === "arrive" ? "即將到達" : "即將開出", verb: "" };
   if (left < 60) return { amount: `${left} 分鐘`, verb };
   const hours = Math.floor(left / 60);
-  const minutes = left % 60;
-  return { amount: minutes ? `${hours} 小時 ${minutes} 分` : `${hours} 小時`, verb };
+  const minutes = String(left % 60).padStart(2, "0");
+  return { amount: `${hours}:${minutes}`, verb };
 }
 
 function formatAmount(amount) {
-  const hour = String(amount).match(/^(\d+) 小時(?: (\d+) 分)?$/);
-  if (!hour) return escapeHtml(amount);
-  return `<span>${hour[1]} 小時</span>${hour[2] ? `<span>${hour[2]} 分</span>` : ""}`;
+  return escapeHtml(amount);
 }
 
 function remainHtml(iso, kind, compact) {
