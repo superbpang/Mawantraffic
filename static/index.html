@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>馬灣船程、車程及路面</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <p class="mark">馬灣</p>
+    <h1>船程、車程及路面</h1>
+    <p id="clock" class="clock">正在讀取班次</p>
+  </header>
+
+  <main>
+    <section id="notices" class="notices" aria-live="polite"></section>
+
+    <section class="chooser" aria-label="起點同方向">
+      <div id="origins" class="origins"></div>
+      <div class="directions" role="group" aria-label="方向">
+        <button type="button" id="to-mawan" data-direction="to-mawan">往馬灣</button>
+        <button type="button" id="from-mawan" data-direction="from-mawan">離開馬灣</button>
+      </div>
+    </section>
+
+    <section id="services" class="services" aria-label="下一班"></section>
+    <section id="road" class="road" aria-label="路面"></section>
+    <section id="taxi" class="taxi" aria-label="的士"></section>
+    <section id="about" class="about" aria-label="資料來源"></section>
+  </main>
+
+  <footer>
+    <p>路面、天氣同九巴到站由本站伺服器轉發。渡輪、居民巴士同陽光巴士只顯示表定開出同服務通告，沒有船隻或巴士位置。</p>
+    <p>資料來源：<a href="https://data.gov.hk/">DATA.GOV.HK</a>、<a href="https://www.td.gov.hk/">運輸署</a>、<a href="https://www.hko.gov.hk/">香港天文台</a>、<a href="https://www.kmb.hk/">九巴</a>。班表連結：<a href="http://www.pitcl.com.hk/tc/">珀麗灣客運</a>、<a href="http://www.sunbus.com.hk/tc/">陽光巴士</a>、<a href="https://www.mawanpark.com/tra/visit/transportation-page.html">馬灣公園交通</a>。</p>
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>
