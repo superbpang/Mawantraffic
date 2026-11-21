@@ -58,23 +58,29 @@ class Slot:
         self.lock = threading.Lock()
         self.value = None
         self.fetched_at: datetime | None = None
+        self.failed_at: datetime | None = None
         self.error = ""
 
     def read(self, loader):
         with self.lock:
+            now = datetime.now(HK)
             fresh = (
                 self.value is not None
                 and self.fetched_at is not None
-                and (datetime.now(HK) - self.fetched_at).total_seconds() < self.cycle
+                and (now - self.fetched_at).total_seconds() < self.cycle
             )
             if fresh:
                 return self._pack(True)
+            if self.failed_at is not None and (now - self.failed_at).total_seconds() < self.cycle:
+                return self._pack(False)
             try:
                 self.value = loader()
                 self.fetched_at = datetime.now(HK)
+                self.failed_at = None
                 self.error = ""
             except Exception as exc:  # noqa: BLE001 - upstream failure must stay on the card
                 self.error = type(exc).__name__
+                self.failed_at = datetime.now(HK)
             return self._pack(False)
 
     def _pack(self, cache_hit: bool) -> dict:
@@ -404,6 +410,18 @@ class CameraStore:
         }
 
 
+def mark_kmb_freshness(slot: dict, now: datetime) -> dict:
+    value = slot.get("value")
+    stamp = _iso(value.get("dataTime")) if value else None
+    source_stale = stamp is None or now - stamp > timedelta(minutes=2)
+    if value is not None:
+        value["sourceStale"] = source_stale
+    if source_stale and value is not None:
+        slot["stale"] = True
+        slot["status"] = "暫時未能更新"
+    return slot
+
+
 class Live:
     def __init__(self):
         self.kmb = Slot(60)
@@ -425,9 +443,7 @@ class Live:
             }
             result = {key: job.result() for key, job in jobs.items()}
         kmb = result["kmb"]
-        if kmb["value"] and kmb["value"].get("sourceStale"):
-            kmb["stale"] = True
-            kmb["status"] = "暫時未能更新"
+        mark_kmb_freshness(kmb, datetime.now(HK))
         return result
 
 

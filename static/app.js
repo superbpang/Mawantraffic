@@ -1,4 +1,4 @@
-const state = { origin: "mawan", direction: "from-mawan", board: null };
+const state = { origin: "mawan", direction: "from-mawan", board: null, refreshFailed: false, refreshing: false };
 
 const originsEl = document.querySelector("#origins");
 const servicesEl = document.querySelector("#services");
@@ -72,10 +72,13 @@ function render(options = {}) {
   document.querySelectorAll(".directions button").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.direction === state.direction));
   });
-  const originsHtml = board.origins.map((origin) => `
-    <button type="button" data-origin="${origin.id}" aria-pressed="${origin.id === state.origin}">${origin.label}</button>
-  `).join("");
-  if (setHtml(originsEl, originsHtml)) {
+  const existingOrigins = [...originsEl.querySelectorAll("button")];
+  const sameOrigins = existingOrigins.length === board.origins.length
+    && existingOrigins.every((button, index) => button.dataset.origin === board.origins[index].id);
+  if (!sameOrigins) {
+    originsEl.innerHTML = board.origins.map((origin) => `
+      <button type="button" data-origin="${origin.id}">${origin.label}</button>
+    `).join("");
     originsEl.querySelectorAll("button").forEach((button) => {
       button.addEventListener("click", () => {
         state.origin = button.dataset.origin;
@@ -84,8 +87,19 @@ function render(options = {}) {
       });
     });
   }
-  clockEl.textContent = `${clockOf(board.now)} · ${board.dayLabel}`;
-  setHtml(noticesEl, board.notices.map((notice) => `
+  originsEl.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.origin === state.origin));
+  });
+  const clockSuffix = state.refreshFailed ? " · 暫時未能更新" : "";
+  const gapNote = (board.calendarGaps || []).length ? " · 部分日子假期表未涵蓋" : "";
+  clockEl.textContent = `${clockOf(board.now)} · ${board.dayLabel}${gapNote}${clockSuffix}`;
+  const gapHtml = (board.calendarGaps || []).length ? `
+    <article class="notice">
+      <h2>假期表未涵蓋</h2>
+      <p>${escapeHtml(board.calendarGaps.join("、"))} 未能判斷平日、星期六或公眾假期，這些日子的表定班次先不列出。</p>
+    </article>
+  ` : "";
+  setHtml(noticesEl, gapHtml + board.notices.map((notice) => `
     <article class="notice">
       <h2><span class="${gradeClass(notice.grade)}">${notice.grade}</span> ${escapeHtml(notice.title)}</h2>
       <p>${escapeHtml(notice.body)}</p>
@@ -229,9 +243,20 @@ function updateCameras(cameras) {
       const picture = image || document.createElement("img");
       picture.alt = `${camera.name}閉路電視`;
       if (!image) figure.prepend(picture);
-      if (picture.dataset.token !== token) {
-        picture.dataset.token = token;
-        picture.src = `/cameras/${encodeURIComponent(camera.id)}.jpg?t=${encodeURIComponent(token)}`;
+      if (token && picture.dataset.token !== token && picture.dataset.pending !== token) {
+        picture.dataset.pending = token;
+        const candidate = new Image();
+        const url = `/cameras/${encodeURIComponent(camera.id)}.jpg?t=${encodeURIComponent(token)}`;
+        candidate.onload = () => {
+          if (picture.dataset.pending !== token) return;
+          picture.src = url;
+          picture.dataset.token = token;
+          delete picture.dataset.pending;
+        };
+        candidate.onerror = () => {
+          if (picture.dataset.pending === token) delete picture.dataset.pending;
+        };
+        candidate.src = url;
       }
     } else if (!figure.querySelector(".blank")) {
       image?.remove();
@@ -263,20 +288,27 @@ function aboutHtml() {
     <article class="panel" id="sources">
       <h2>關於資料</h2>
       <p>官方實時只用於來源寫明到站、車速、行車時間、閉路電視或特別交通消息，而且更新周期短於五分鐘。官方班表是營辦商或運輸署公布的開出時間。服務通告覆蓋同日受影響班次。推估不在這一版顯示。</p>
-      <p>2026 年公眾假期採用香港政府一站通假期頁，頁尾修訂日期為 2025 年 5 月。沒有編入 2027 年假期。陽光巴士 2020 年改道通告尚未核對，頁面使用 2024 年 12 月 15 日的班表。</p>
-      <p class="meta"><a href="https://data.gov.hk/en/terms-and-conditions">DATA.GOV.HK 使用條款</a> · <a href="https://www.gov.hk/tc/about/abouthk/holiday/2026.htm">2026 年公眾假期</a></p>
+      <p>2026 年公眾假期採用香港政府一站通，頁尾修訂日期為 2025 年 5 月。2027 年採用同一網站，頁尾修訂日期為 2026 年 5 月。其他年份先標明假期表未涵蓋。陽光巴士 2020 年改道通告尚未核對，頁面使用 2024 年 12 月 15 日的班表。</p>
+      <p class="meta"><a href="https://data.gov.hk/en/terms-and-conditions">DATA.GOV.HK 使用條款</a> · <a href="https://www.gov.hk/tc/about/abouthk/holiday/2026.htm">2026 年公眾假期</a> · <a href="https://www.gov.hk/tc/about/abouthk/holiday/2027.htm">2027 年公眾假期</a></p>
     </article>
   `;
 }
 
 async function refresh() {
+  if (state.refreshing) return;
+  state.refreshing = true;
   try {
     const response = await fetch("/api/board", { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status));
     state.board = await response.json();
+    state.refreshFailed = false;
     render({ keepScroll: true });
   } catch (error) {
-    clockEl.textContent = state.board ? `${clockOf(state.board.now)} · 暫時未能更新` : "暫時未能更新";
+    state.refreshFailed = true;
+    if (state.board) render({ keepScroll: true });
+    else clockEl.textContent = "暫時未能更新";
+  } finally {
+    state.refreshing = false;
   }
 }
 

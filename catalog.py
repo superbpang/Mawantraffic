@@ -31,6 +31,28 @@ HOLIDAYS_2026 = {
     date(2026, 12, 25),
     date(2026, 12, 26),
 }
+# https://www.gov.hk/tc/about/abouthk/holiday/2027.htm 頁尾修訂日期：2026年5月。2026-11-21 擷取。
+# 年初二是星期日，補假在年初四。
+HOLIDAYS_2027 = {
+    date(2027, 1, 1),
+    date(2027, 2, 6),
+    date(2027, 2, 8),
+    date(2027, 2, 9),
+    date(2027, 3, 26),
+    date(2027, 3, 27),
+    date(2027, 3, 29),
+    date(2027, 4, 5),
+    date(2027, 5, 1),
+    date(2027, 5, 13),
+    date(2027, 6, 9),
+    date(2027, 7, 1),
+    date(2027, 9, 16),
+    date(2027, 10, 1),
+    date(2027, 10, 8),
+    date(2027, 12, 25),
+    date(2027, 12, 27),
+}
+HOLIDAYS_BY_YEAR = {2026: HOLIDAYS_2026, 2027: HOLIDAYS_2027}
 
 ORIGINS = [
     {"id": "central", "label": "中環"},
@@ -519,14 +541,20 @@ class DayKind:
 
     @property
     def table(self) -> str:
-        return "weekend" if self.key in {"saturday", "sunday", "holiday"} else "weekday"
+        if self.key in {"saturday", "sunday", "holiday"}:
+            return "weekend"
+        if self.key == "unknown":
+            return "unknown"
+        return "weekday"
 
 
 def day_kind(day: date) -> DayKind:
-    holiday = day in HOLIDAYS_2026 or day.weekday() == 6
     if day.weekday() == 6:
         return DayKind("sunday", "星期日", True, True)
-    if holiday:
+    holidays = HOLIDAYS_BY_YEAR.get(day.year)
+    if holidays is None:
+        return DayKind("unknown", "假期表未涵蓋", False, False)
+    if day in holidays:
         return DayKind("holiday", "公眾假期", False, True)
     if day.weekday() == 5:
         return DayKind("saturday", "星期六", False, False)
@@ -562,6 +590,8 @@ def upcoming(route: dict, direction_name: str, now: datetime, limit: int = 3) ->
     for offset in range(0, 3):
         day = start_day + timedelta(days=offset)
         kind = day_kind(day)
+        if kind.key == "unknown":
+            continue
         for item in _times_for(direction, kind):
             hour, minute = map(int, item["time"].split(":"))
             moment = datetime(day.year, day.month, day.day, hour, minute, tzinfo=HK)
@@ -618,7 +648,9 @@ def notice_views(now: datetime) -> list[dict]:
     for notice in NOTICES:
         applies = kind.key == "weekday" and now.date().isoformat() >= notice["effectiveFrom"]
         text = notice["body"]
-        if applies:
+        if kind.key == "unknown":
+            text += " 假期表未涵蓋今日，這項平日調整未套用。"
+        elif applies:
             text += " 今日是平日，受影響的表定班次已從下一班剔除。"
         else:
             text += " 今日不是受影響的平日，班表不套用這項調整。"
@@ -661,9 +693,15 @@ def board(now: datetime | None = None) -> dict:
     if now.tzinfo is None:
         now = now.replace(tzinfo=HK)
     kind = day_kind(now.date())
+    gaps = [
+        (now.date() + timedelta(days=offset)).isoformat()
+        for offset in range(3)
+        if day_kind(now.date() + timedelta(days=offset)).key == "unknown"
+    ]
     return {
         "now": now.isoformat(),
         "dayLabel": kind.label,
+        "calendarGaps": gaps,
         "origins": ORIGINS,
         "notices": notice_views(now),
         "services": [service_view(route, now) for route in ROUTES],

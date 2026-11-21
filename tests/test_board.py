@@ -67,6 +67,23 @@ class ScheduleTests(unittest.TestCase):
         times = catalog.upcoming(route("ferry-central"), "from-mawan", at("2026-11-21T16:00:40"))
         self.assertEqual(times[0]["clock"], "16:00")
 
+    def test_new_year_2027_uses_the_holiday_table(self):
+        kind = catalog.day_kind(datetime(2027, 1, 1).date())
+        self.assertEqual(kind.key, "holiday")
+        times = catalog.upcoming(route("ferry-central"), "from-mawan", at("2027-01-01T08:01:00"))
+        self.assertEqual(times[0]["clock"], "10:00")
+        lunar_new_year = catalog.upcoming(route("nr330"), "from-mawan", at("2027-02-06T07:32:00"))
+        self.assertEqual(lunar_new_year[0]["clock"], "07:40")
+
+    def test_year_without_a_calendar_is_not_a_weekday(self):
+        kind = catalog.day_kind(datetime(2028, 1, 3).date())
+        self.assertEqual(kind.key, "unknown")
+        self.assertEqual(catalog.day_kind(datetime(2028, 1, 2).date()).key, "sunday")
+        times = catalog.upcoming(route("ferry-central"), "from-mawan", at("2028-01-03T08:01:00"))
+        self.assertEqual(times, [])
+        self.assertEqual(catalog.board(at("2028-01-03T08:01:00"))["calendarGaps"][0], "2028-01-03")
+        self.assertIn("未套用", catalog.notice_views(at("2028-01-03T08:01:00"))[0]["body"])
+
     def test_tsing_yi_towards_mawan_is_only_nr330(self):
         payload = catalog.board(at("2026-11-21T12:00:00"))
         matches = []
@@ -88,6 +105,32 @@ class LiveParseTests(unittest.TestCase):
         self.assertEqual(packed["status"], "暫時未能更新")
         self.assertIsNone(packed["value"])
         self.assertTrue(packed["stale"])
+
+    def test_failed_load_cooldown_does_not_repeat_the_upstream_call(self):
+        slot = live.Slot(60)
+        calls = {"n": 0}
+
+        def boom():
+            calls["n"] += 1
+            raise TimeoutError("upstream")
+
+        slot.read(boom)
+        slot.read(boom)
+        self.assertEqual(calls["n"], 1)
+        self.assertIsNone(slot.fetched_at)
+        self.assertIsNotNone(slot.failed_at)
+
+    def test_kmb_freshness_is_recomputed_from_data_time(self):
+        slot = {
+            "value": {"dataTime": "2026-11-21T12:00:00+08:00", "sourceStale": False},
+            "stale": False,
+            "status": "已更新",
+            "fetchedAt": "2026-11-21T12:01:55+08:00",
+        }
+        live.mark_kmb_freshness(slot, at("2026-11-21T12:02:45"))
+        self.assertTrue(slot["stale"])
+        self.assertEqual(slot["status"], "暫時未能更新")
+        self.assertEqual(slot["fetchedAt"], "2026-11-21T12:01:55+08:00")
 
     def test_speed_parser_picks_named_detectors_only(self):
         xml = """
