@@ -24,8 +24,13 @@ function gradeClass(grade, stale) {
 
 function tripLabel(item, today) {
   const day = (item.time || item.eta || "").slice(0, 10);
-  const clock = day && day !== today ? `${item.dayLabel || day.slice(5)} ${item.clock}` : item.clock;
-  return item.note ? `${clock}（${item.note}）` : clock;
+  let clock = day && day !== today ? `${item.dayLabel || day.slice(5)} ${item.clock}` : item.clock;
+  if (item.timeLabel && (item.eta || Object.hasOwn(item, "remark"))) {
+    clock = `${clock} ${item.timeLabel}`;
+  }
+  if (item.note) return `${clock}（${item.note}）`;
+  if (item.remark) return `${clock}（${item.remark}）`;
+  return clock;
 }
 
 function laterText(items, today) {
@@ -53,36 +58,47 @@ function escapeHtml(value) {
   }[char]));
 }
 
-function render() {
+function setHtml(element, html) {
+  if (element.dataset.drawn === html) return false;
+  element.dataset.drawn = html;
+  element.innerHTML = html;
+  return true;
+}
+
+function render(options = {}) {
   const board = state.board;
   if (!board) return;
+  const scrollY = options.keepScroll ? window.scrollY : null;
   document.querySelectorAll(".directions button").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.direction === state.direction));
   });
-  originsEl.innerHTML = board.origins.map((origin) => `
+  const originsHtml = board.origins.map((origin) => `
     <button type="button" data-origin="${origin.id}" aria-pressed="${origin.id === state.origin}">${origin.label}</button>
   `).join("");
-  originsEl.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.origin = button.dataset.origin;
-      state.direction = state.origin === "mawan" ? "from-mawan" : "to-mawan";
-      render();
+  if (setHtml(originsEl, originsHtml)) {
+    originsEl.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.origin = button.dataset.origin;
+        state.direction = state.origin === "mawan" ? "from-mawan" : "to-mawan";
+        render();
+      });
     });
-  });
+  }
   clockEl.textContent = `${clockOf(board.now)} · ${board.dayLabel}`;
-  noticesEl.innerHTML = board.notices.map((notice) => `
+  setHtml(noticesEl, board.notices.map((notice) => `
     <article class="notice">
       <h2><span class="${gradeClass(notice.grade)}">${notice.grade}</span> ${escapeHtml(notice.title)}</h2>
       <p>${escapeHtml(notice.body)}</p>
       <p class="meta">資料時間：通告由 ${escapeHtml(notice.effectiveFrom)} 起，擷取 ${escapeHtml(notice.capturedOn)} · ${escapeHtml(notice.sourceName)}</p>
     </article>
-  `).join("") + weatherHtml(board.live.weather);
+  `).join("") + weatherHtml(board.live.weather));
 
   const cards = scheduledCards(board).concat(kmbCard(board));
-  servicesEl.innerHTML = cards.length ? cards.join("") : `<article class="card empty"><p>這個起點沒有「${state.direction === "to-mawan" ? "往馬灣" : "離開馬灣"}」的開出班次。請轉換方向或起點。</p></article>`;
-  roadEl.innerHTML = roadHtml(board);
-  taxiEl.innerHTML = taxiHtml(board.taxi);
-  aboutEl.innerHTML = aboutHtml();
+  setHtml(servicesEl, cards.length ? cards.join("") : `<article class="card empty"><p>這個起點沒有「${state.direction === "to-mawan" ? "往馬灣" : "離開馬灣"}」的開出班次。請轉換方向或起點。</p></article>`);
+  renderRoad(board);
+  setHtml(taxiEl, taxiHtml(board.taxi));
+  if (!aboutEl.dataset.drawn) setHtml(aboutEl, aboutHtml());
+  if (scrollY !== null) window.scrollTo(0, scrollY);
 }
 
 function weatherHtml(slot) {
@@ -154,7 +170,6 @@ function roadHtml(board) {
   const news = board.live.news;
   const speeds = board.live.speeds;
   const journey = board.live.journey;
-  const cameras = board.live.cameras || [];
   const messages = news.value?.messages || [];
   const newsBody = !news.value
     ? "暫時未能更新"
@@ -166,28 +181,69 @@ function roadHtml(board) {
   `).join("") || `<p class="meta">這次讀數沒有可顯示的有效車速。</p>`;
   const omitted = (speeds.value?.omitted || ["青嶼幹線", "青馬大橋", "汲水門大橋", "馬灣路", "長青公路"]).join("、");
   const journeyBody = (journey.value?.rows || []).map((row) => `<p>${escapeHtml(row.from)} → ${escapeHtml(row.to)}：${escapeHtml(row.minutes)} 分鐘</p>`).join("") || `<p class="meta">未有南昌站告示的機場行車時間。</p>`;
-  const cameraBody = cameras.map((camera) => {
-    const caption = camera.message ? `${camera.name} · ${camera.message}` : `${camera.name} · ${clockOf(camera.lastGoodAt)}`;
-    const visual = camera.status === "ok" || camera.lastGoodAt
-      ? `<img src="/cameras/${encodeURIComponent(camera.id)}.jpg" alt="${escapeHtml(camera.name)}閉路電視">`
-      : `<div class="blank">鏡頭暫時沒有畫面</div>`;
-    return `<figure>${visual}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
-  }).join("");
   return `
-    <article class="panel">
-      <h2>相關走廊路面</h2>
-      <p class="meta">只看往返馬灣的走廊，不是全港車速圖。</p>
-      ${newsBody}
-      <p class="meta">${escapeHtml(news.status)} · 資料時間：${escapeHtml(clockOf(news.fetchedAt))} · ${escapeHtml(news.value?.sourceName || "運輸署特別交通消息")}</p>
-      <div class="speeds">${speedBody}</div>
-      <p class="meta">${escapeHtml(omitted)}：只有消息同鏡頭。${escapeHtml(speeds.value?.omittedReason || "")}</p>
-      <p class="meta">${escapeHtml(speeds.status)} · 資料時間：${escapeHtml(speeds.value?.period || clockOf(speeds.fetchedAt))} · ${escapeHtml(speeds.value?.sourceName || "運輸署車速")}</p>
-      ${journeyBody}
-      <p class="note">${escapeHtml(journey.value?.note || "")}</p>
-      <p class="meta">${escapeHtml(journey.status)} · 資料時間：${escapeHtml(clockOf(journey.value?.capture) || clockOf(journey.fetchedAt))}</p>
-      <div class="cameras">${cameraBody}</div>
-    </article>
+    <h2>相關走廊路面</h2>
+    <p class="meta">只看往返馬灣的走廊，不是全港車速圖。</p>
+    ${newsBody}
+    <p class="meta">${escapeHtml(news.status)} · 資料時間：${escapeHtml(clockOf(news.fetchedAt))} · ${escapeHtml(news.value?.sourceName || "運輸署特別交通消息")}</p>
+    <div class="speeds">${speedBody}</div>
+    <p class="meta">${escapeHtml(omitted)}：只有消息同鏡頭。${escapeHtml(speeds.value?.omittedReason || "")}</p>
+    <p class="meta">${escapeHtml(speeds.status)} · 資料時間：${escapeHtml(speeds.value?.period || clockOf(speeds.fetchedAt))} · ${escapeHtml(speeds.value?.sourceName || "運輸署車速")}</p>
+    ${journeyBody}
+    <p class="note">${escapeHtml(journey.value?.note || "")}</p>
+    <p class="meta">${escapeHtml(journey.status)} · 資料時間：${escapeHtml(clockOf(journey.value?.capture) || clockOf(journey.fetchedAt))}</p>
   `;
+}
+
+function renderRoad(board) {
+  if (!roadEl.querySelector("#road-body")) {
+    roadEl.innerHTML = `<article class="panel"><div id="road-body"></div><div class="cameras" id="cameras"></div></article>`;
+  }
+  setHtml(document.querySelector("#road-body"), roadHtml(board));
+  updateCameras(board.live.cameras || []);
+}
+
+function updateCameras(cameras) {
+  const root = document.querySelector("#cameras");
+  const seen = new Set();
+  cameras.forEach((camera) => {
+    seen.add(camera.id);
+    let figure = root.querySelector(`[data-id="${camera.id}"]`);
+    if (!figure) {
+      figure = document.createElement("figure");
+      figure.dataset.id = camera.id;
+      root.append(figure);
+    }
+    const caption = camera.message ? `${camera.name} · ${camera.message}` : `${camera.name} · ${clockOf(camera.lastGoodAt)}`;
+    let captionEl = figure.querySelector("figcaption");
+    if (!captionEl) {
+      captionEl = document.createElement("figcaption");
+      figure.append(captionEl);
+    }
+    captionEl.textContent = caption;
+    const wantImage = camera.status === "ok" || camera.lastGoodAt;
+    const token = camera.lastGoodAt || camera.fetchedAt || "";
+    const image = figure.querySelector("img");
+    if (wantImage) {
+      figure.querySelector(".blank")?.remove();
+      const picture = image || document.createElement("img");
+      picture.alt = `${camera.name}閉路電視`;
+      if (!image) figure.prepend(picture);
+      if (picture.dataset.token !== token) {
+        picture.dataset.token = token;
+        picture.src = `/cameras/${encodeURIComponent(camera.id)}.jpg?t=${encodeURIComponent(token)}`;
+      }
+    } else if (!figure.querySelector(".blank")) {
+      image?.remove();
+      const blank = document.createElement("div");
+      blank.className = "blank";
+      blank.textContent = "鏡頭暫時沒有畫面";
+      figure.prepend(blank);
+    }
+  });
+  root.querySelectorAll("figure").forEach((figure) => {
+    if (!seen.has(figure.dataset.id)) figure.remove();
+  });
 }
 
 function taxiHtml(taxi) {
@@ -218,7 +274,7 @@ async function refresh() {
     const response = await fetch("/api/board", { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status));
     state.board = await response.json();
-    render();
+    render({ keepScroll: true });
   } catch (error) {
     clockEl.textContent = state.board ? `${clockOf(state.board.now)} · 暫時未能更新` : "暫時未能更新";
   }

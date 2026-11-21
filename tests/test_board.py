@@ -149,6 +149,20 @@ class LiveParseTests(unittest.TestCase):
             "minutes": "21",
         }])
 
+    def test_tai_po_golf_club_is_not_the_ma_wan_corridor(self):
+        self.assertFalse(live.corridor_match("大埔珀麗高爾夫球會附近封路"))
+        self.assertTrue(live.corridor_match("珀麗灣碼頭附近有交通意外"))
+        self.assertTrue(live.corridor_match("青馬大橋實施強風管制"))
+
+    def test_cancelled_weather_warning_stays_off_the_card(self):
+        parsed = live.parse_weather({
+            "WTCSGNL": {"name": "三號強風信號", "code": "TC3", "actionCode": "CANCEL", "issueTime": "2026-11-21T12:00:00+08:00"},
+            "WTS": {"name": "雷暴警告", "code": "WTS", "actionCode": "ISSUE", "issueTime": "2026-11-21T13:00:00+08:00"},
+            "WFIRE": {"name": "紅色火災危險警告", "code": "WFIRER", "actionCode": "ISSUE"},
+        })
+        self.assertEqual([item["code"] for item in parsed["warnings"]], ["WTS"])
+        self.assertIsNotNone(parsed["wind"])
+
 
 if __name__ == "__main__":
     unittest.main()

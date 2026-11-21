@@ -180,6 +180,17 @@ def _text(node, name: str) -> str:
     return (child.text or "").strip() if child is not None and child.text else ""
 
 
+FALSE_PLACES = ("珀麗高爾夫",)
+
+
+def corridor_match(blob: str) -> bool:
+    cleaned = blob
+    for place in FALSE_PLACES:
+        cleaned = cleaned.replace(place, "")
+    lowered = cleaned.lower()
+    return any(keyword.lower() in lowered for keyword in NEWS_KEYWORDS)
+
+
 def load_news() -> dict:
     body, _ = _get(NEWS_URL)
     root = ET.fromstring(body)
@@ -198,7 +209,7 @@ def load_news() -> dict:
             _text(node, "BETWEEN_LANDMARK_EN"),
         ]
         blob = " ".join(fields)
-        if not any(keyword.lower() in blob.lower() for keyword in NEWS_KEYWORDS):
+        if not corridor_match(blob):
             continue
         messages.append({
             "id": _text(node, "INCIDENT_NUMBER"),
@@ -302,13 +313,14 @@ def load_journey() -> dict:
     return parse_journey(body)
 
 
-def load_weather() -> dict:
-    body, _ = _get(WEATHER_URL)
-    payload = json.loads(body)
+def parse_weather(payload: dict) -> dict:
     warnings = []
     for code, label in WEATHER_CODES.items():
         item = payload.get(code)
         if not item:
+            continue
+        action = (item.get("actionCode") or "").strip().upper()
+        if action.startswith("CANCEL"):
             continue
         warnings.append({
             "code": code,
@@ -323,6 +335,11 @@ def load_weather() -> dict:
         "sourceName": "香港天文台天氣警告摘要",
         "sourceUrl": WEATHER_URL,
     }
+
+
+def load_weather() -> dict:
+    body, _ = _get(WEATHER_URL)
+    return parse_weather(json.loads(body))
 
 
 class CameraStore:
