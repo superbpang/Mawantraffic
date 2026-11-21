@@ -162,7 +162,7 @@ footer p { margin: 0; }
     column-gap: 24px;
     row-gap: 8px;
   }
-  #alerts, #road, #taxi { grid-column: 1 / -1; }
+  #alerts, #road { grid-column: 1 / -1; }
   .lines { gap: 12px; }
   .fold summary { padding: 10px 16px 16px; }
   .times { gap: 16px; margin-top: 12px; }

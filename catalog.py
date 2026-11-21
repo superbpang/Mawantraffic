@@ -668,26 +668,6 @@ def notice_views(now: datetime) -> list[dict]:
     return views
 
 
-def taxi_view(now: datetime) -> dict:
-    minute = now.hour * 60 + now.minute
-    open_for_ark = 9 * 60 <= minute < 23 * 60
-    if open_for_ark:
-        status = "現在至晚上11時，市區的士可往來珀欣路，以及珀林路與珀欣路之間的一段珀麗路，前往挪亞方舟正門方向。"
-    else:
-        status = "現在不在上午9時至晚上11時之內。珀欣路及珀林路與珀欣路之間的一段珀麗路，不在此時段的的士例外內。"
-    return {
-        "title": "市區的士入島",
-        "status": status,
-        "always": "全日仍可往來馬灣路、馬灣路與珀林路之間的迴旋處、芳園路以南的一段珀林路、芳園路和馬灣鄉事會路。私家車沒有運輸署許可證不可進入。",
-        "goods": "貨車例外時段是每日上午10時至下午4時。旅遊巴士例外時段是每日上午9時至晚上11時。",
-        "sourceName": "運輸署交通通告：荃灣馬灣禁區",
-        "sourceUrl": "https://www.td.gov.hk/tc/traffic_notices/index_id_86371.html",
-        "effective": "2026-04-30 上午9時起",
-        "capturedOn": "2026-11-21",
-        "dataTimeLabel": "通告生效時間",
-    }
-
-
 def board(now: datetime | None = None) -> dict:
     now = now or datetime.now(HK)
     if now.tzinfo is None:
@@ -705,7 +685,6 @@ def board(now: datetime | None = None) -> dict:
         "origins": ORIGINS,
         "notices": notice_views(now),
         "services": [service_view(route, now) for route in ROUTES],
-        "taxi": taxi_view(now),
         "cameras": CAMERAS,
     }
 

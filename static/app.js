@@ -6,9 +6,6 @@ const alertsEl = document.querySelector("#alerts");
 const clockEl = document.querySelector("#clock");
 const roadSummaryEl = document.querySelector("#road-summary");
 const roadBodyEl = document.querySelector("#road-body");
-const taxiSummaryEl = document.querySelector("#taxi-summary");
-const taxiBodyEl = document.querySelector("#taxi-body");
-
 const BUS_ORDER = ["nr330", "nr332", "nr334", "nr338s", "nr338", "nr331", "nr331s"];
 const FERRY_ORDER = ["ferry-central", "ferry-tsuen-wan"];
 const DEST = {
@@ -258,20 +255,6 @@ function roadHtml(board) {
   `;
 }
 
-function taxiCopy(taxi) {
-  const openNow = taxi.status.startsWith("現在至晚上11時");
-  if (openNow) {
-    return {
-      summary: "現時至晚上11時可駛入珀欣路",
-      body: "<p>市區的士可前往挪亞方舟正門。</p><p>馬灣路及芳園路一帶全日可通行。未領許可證的私家車不得進入。</p><p>貨車例外時段為上午10時至下午4時；旅遊巴士為上午9時至晚上11時。</p>",
-    };
-  }
-  return {
-    summary: "現時市區的士不可駛入珀欣路",
-    body: "<p>珀欣路只限上午9時至晚上11時駛入。</p><p>馬灣路及芳園路一帶全日可通行。未領許可證的私家車不得進入。</p><p>貨車例外時段為上午10時至下午4時；旅遊巴士為上午9時至晚上11時。</p>",
-  };
-}
-
 function rememberOpen() {
   document.querySelectorAll("details[data-id]").forEach((el) => {
     state.open[el.dataset.id] = el.open;
@@ -291,9 +274,6 @@ function render(options = {}) {
   roadSummaryEl.textContent = roadHeadline(board);
   setHtml(roadBodyEl, roadHtml(board));
   updateCameras(board.live.cameras || []);
-  const taxi = taxiCopy(board.taxi);
-  taxiSummaryEl.textContent = taxi.summary;
-  setHtml(taxiBodyEl, `${taxi.body}<p><a href="${escapeHtml(board.taxi.sourceUrl)}">運輸署通告</a></p>`);
   if (scrollY !== null) window.scrollTo(0, scrollY);
 }
 
