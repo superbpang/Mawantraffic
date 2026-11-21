@@ -9,17 +9,18 @@ const roadBodyEl = document.querySelector("#road-body");
 const taxiSummaryEl = document.querySelector("#taxi-summary");
 const taxiBodyEl = document.querySelector("#taxi-body");
 
-const ORDER = ["ferry-central", "ferry-tsuen-wan", "nr330", "nr332", "nr334", "nr338s", "nr338", "nr331", "nr331s"];
-const PLACES = {
-  "ferry-central": ["中環船", "中環"],
-  "ferry-tsuen-wan": ["荃灣船", "荃灣"],
-  "nr330": ["青衣巴士", "青衣站"],
-  "nr332": ["葵芳巴士", "葵芳"],
-  "nr334": ["機場巴士", "機場"],
-  "nr338s": ["中環巴士", "中環"],
-  "nr338": ["中環夜巴", "中環"],
-  "nr331": ["荃灣巴士", "荃灣站"],
-  "nr331s": ["荃灣西巴士", "荃灣西"],
+const BUS_ORDER = ["nr330", "nr332", "nr334", "nr338s", "nr338", "nr331", "nr331s"];
+const FERRY_ORDER = ["ferry-central", "ferry-tsuen-wan"];
+const DEST = {
+  "ferry-central": "中環",
+  "ferry-tsuen-wan": "荃灣",
+  nr330: "青衣站",
+  nr332: "葵芳",
+  nr334: "機場",
+  nr338s: "中環",
+  nr338: "中環",
+  nr331: "荃灣站",
+  nr331s: "荃灣西站",
 };
 
 function escapeHtml(value) {
@@ -47,18 +48,18 @@ function hkDate(iso) {
   return `${bag.year}-${bag.month}-${bag.day}`;
 }
 
-function remainParts(iso, kind, now = new Date()) {
+function remainParts(iso, kind, compact, now = new Date()) {
   const left = Math.ceil((new Date(iso) - now) / 60000);
-  const verb = kind === "arrive" ? "後到" : "後開出";
-  if (left <= 0) return { amount: kind === "arrive" ? "就快到" : "就快開出", verb: "" };
+  const verb = compact ? "" : (kind === "arrive" ? "後到達" : "後開出");
+  if (left <= 0) return { amount: kind === "arrive" ? "即將到達" : "即將開出", verb: "" };
   if (left < 60) return { amount: `${left} 分鐘`, verb };
   const hours = Math.floor(left / 60);
   const minutes = left % 60;
   return { amount: minutes ? `${hours} 小時 ${minutes} 分` : `${hours} 小時`, verb };
 }
 
-function remainHtml(iso, kind) {
-  const parts = remainParts(iso, kind);
+function remainHtml(iso, kind, compact) {
+  const parts = remainParts(iso, kind, compact);
   return `<span class="amount">${escapeHtml(parts.amount)}</span><span class="verb">${escapeHtml(parts.verb)}</span>`;
 }
 
@@ -70,51 +71,59 @@ function shiftDate(day, days) {
 function whenText(iso, clock, dayLabel, today) {
   const day = hkDate(iso);
   if (day === today) return clock;
-  if (day === shiftDate(today, 1)) return `聽日 ${clock}`;
+  if (day === shiftDate(today, 1)) return `明日 ${clock}`;
   return `${dayLabel || day.slice(5)} ${clock}`;
 }
 
 function shortNote(note) {
   if (!note) return "";
-  if (note.includes("港珠澳")) return "經口岸";
-  if (note.includes("青衣站")) return "經青衣站";
+  if (note.includes("港珠澳")) return "途經口岸";
+  if (note.includes("青衣站")) return "途經青衣站";
   return "";
 }
 
 function usefulNotes(notes) {
   return (notes || []).flatMap((note) => {
     if (note.includes("編定班次") || note.includes("碼頭關閘") || note.includes("每日服務") || note.includes("港鐵")) return [];
-    if (note.includes("班表摘要")) return ["上車站在中環碼頭近三號碼頭，經香港站"];
-    if (note.includes("臨海廣場")) return ["去挪亞方舟在臨海廣場落車"];
-    if (note.includes("通宵")) return ["通宵班"];
-    if (note.includes("基慧")) return ["經基慧小學"];
+    if (note.includes("班表摘要")) return ["上車站為中環碼頭近三號碼頭，途經香港站"];
+    if (note.includes("臨海廣場")) return ["前往挪亞方舟的乘客在臨海廣場下車"];
+    if (note.includes("通宵")) return ["通宵班次"];
+    if (note.includes("基慧")) return ["途經基慧小學"];
     return [note];
   });
 }
 
-function tripItems(trips, today, kind) {
+function tripKind(trip, fallback) {
+  return trip.timeLabel === "預計到達" ? "arrive" : fallback;
+}
+
+function tripItems(trips, today, fallback, compact) {
   return trips.slice(0, 3).map((trip) => {
     const iso = trip.time || trip.eta;
-    const ownKind = trip.timeLabel === "預計到達" ? "arrive" : kind;
+    const kind = tripKind(trip, fallback);
     const tag = shortNote(trip.note);
     return `
       <li>
         <b>${escapeHtml(whenText(iso, trip.clock, trip.dayLabel, today))}</b>
-        <em data-iso="${escapeHtml(iso)}" data-kind="${ownKind}">${remainHtml(iso, ownKind)}</em>
+        <em data-iso="${escapeHtml(iso)}" data-kind="${kind}" data-compact="${compact ? "1" : ""}">${remainHtml(iso, kind, compact)}</em>
         ${tag ? `<span class="tag">${escapeHtml(tag)}</span>` : ""}
       </li>
     `;
   }).join("");
 }
 
-function lineHtml(id, name, where, trips, today, kind, more) {
+function lineHtml(id, code, where, trips, today, fallback, more) {
+  const kinds = trips.map((trip) => tripKind(trip, fallback));
+  const compact = kinds.length > 0 && kinds.every((kind) => kind === kinds[0]);
+  const verb = compact ? (kinds[0] === "arrive" ? "到達" : "開出") : "";
+  const place = verb ? `${where} · ${verb}` : where;
   const times = trips.length
-    ? `<ol class="times">${tripItems(trips, today, kind)}</ol>`
-    : `<p class="none">未有接下來的班次</p>`;
+    ? `<ol class="times">${tripItems(trips, today, fallback, compact)}</ol>`
+    : `<p class="none">暫無班次</p>`;
   return `
     <details class="fold" data-id="${escapeHtml(id)}" ${state.open[id] ? "open" : ""}>
       <summary>
-        <div class="title"><span class="name">${escapeHtml(name)}</span><span class="where">${escapeHtml(where)}</span></div>
+        <div class="title"><span class="code">${escapeHtml(code)}</span><span class="where">${escapeHtml(place)}</span></div>
         ${times}
       </summary>
       <div class="more">${more}</div>
@@ -122,24 +131,24 @@ function lineHtml(id, name, where, trips, today, kind, more) {
   `;
 }
 
-function serviceLines(board, direction) {
+function serviceLines(board, direction, ids) {
   const today = hkDate(board.now);
-  const services = ORDER.map((id) => board.services.find((service) => service.id === id)).filter(Boolean);
+  const services = ids.map((id) => board.services.find((service) => service.id === id)).filter(Boolean);
   return services.map((service) => {
     const leg = service.directions[direction];
-    const [name, place] = PLACES[service.id];
-    const where = direction === "from-mawan" ? `去${place}` : `由${place}返`;
+    const place = DEST[service.id];
+    const where = direction === "from-mawan" ? `往${place}` : `由${place}`;
     const notes = usefulNotes(service.notes);
     const meaning = service.mode === "ferry"
-      ? "時間是碼頭關閘，不是船到對面。"
-      : "這是開出時間，不是到達時間。";
+      ? "所示為碼頭關閘時間，並非船隻抵達時間。"
+      : "所示為開出時間，並非抵達時間。";
     const more = `
-      <p>${escapeHtml(leg.boardStop)}開去${escapeHtml(leg.destination)}。</p>
+      <p>由${escapeHtml(leg.boardStop)}開往${escapeHtml(leg.destination)}。</p>
       <p>${meaning}</p>
       ${notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}
       <p><a href="${escapeHtml(service.sourceUrl)}">班表</a> · <a href="${escapeHtml(service.fareUrl)}">${escapeHtml(service.fareText)}</a></p>
     `;
-    return lineHtml(`${service.id}-${direction}`, name, where, leg.upcoming, today, "leave", more);
+    return lineHtml(`${service.id}-${direction}`, service.route, where, leg.upcoming, today, "leave", more);
   }).join("");
 }
 
@@ -147,22 +156,22 @@ function kmbLine(board, direction) {
   const today = hkDate(board.now);
   const slot = board.live?.kmb;
   const value = slot?.value;
-  const where = direction === "from-mawan" ? "去九龍站" : "由九龍站返";
+  const where = direction === "from-mawan" ? "往九龍站" : "由九龍站";
   const id = `kmb-${direction}`;
   if (!value) {
-    return lineHtml(id, "九巴 230R", where, [], today, "arrive", "<p>暫時讀不到到站時間。</p>");
+    return lineHtml(id, "230R", where, [], today, "arrive", "<p>暫時未能讀取到站時間。</p>");
   }
   const trips = value.trips.filter((trip) => trip.direction === direction).slice(0, 3);
   const stop = direction === "to-mawan" ? value.originTo : value.originFrom;
   const dest = direction === "to-mawan" ? value.destinationTo : value.destinationFrom;
-  const stale = slot.stale ? "<p>到站時間可能未更新。</p>" : "";
+  const stale = slot.stale ? "<p>到站時間可能尚未更新。</p>" : "";
   const more = `
-    <p>${escapeHtml(stop)}去${escapeHtml(dest)}。</p>
-    <p>沒有備註的是到站時間。寫著原定班次的是開出時間。</p>
+    <p>九巴。由${escapeHtml(stop)}開往${escapeHtml(dest)}。</p>
+    <p>無備註者為預計到達；備註為「原定班次」者為表定開出。</p>
     ${stale}
     <p><a href="${escapeHtml(value.fareUrl)}">${escapeHtml(value.fareText)}</a></p>
   `;
-  return lineHtml(id, "九巴 230R", where, trips, today, "arrive", more);
+  return lineHtml(id, "230R", where, trips, today, "arrive", more);
 }
 
 function alertHtml(board) {
@@ -176,10 +185,10 @@ function alertHtml(board) {
   }
   const notice = (board.notices || []).find((item) => item.appliesToday);
   if (notice) {
-    parts.push(`<details class="fold alert" data-id="notice" ${state.open.notice ? "open" : ""}><summary><span class="name">平日船期有改</span><span class="aside">已在下面扣走</span></summary><div class="more"><p>${escapeHtml(notice.body)}</p></div></details>`);
+    parts.push(`<details class="fold alert" data-id="notice" ${state.open.notice ? "open" : ""}><summary><span class="name">平日船期調整</span><span class="aside">受影響班次已剔除</span></summary><div class="more"><p>${escapeHtml(notice.body)}</p></div></details>`);
   }
   if ((board.calendarGaps || []).length) {
-    parts.push(`<p class="alert">有幾日未能判斷是不是假期，那些日子的班次先不顯示。</p>`);
+    parts.push(`<p class="alert">部分日期未能判斷是否公眾假期，該等日子的班次暫不列出。</p>`);
   }
   return parts.join("");
 }
@@ -187,11 +196,11 @@ function alertHtml(board) {
 function roadHeadline(board) {
   const roads = board.live?.speeds?.value?.roads || [];
   if (roads.length) {
-    return roads.map((road) => `${road.road === "北大嶼山公路" ? "大嶼山公路" : road.road} ${road.speed}`).join(" · ");
+    return roads.map((road) => `${road.road} ${road.speed}`).join(" · ");
   }
-  if ((board.live?.news?.value?.messages || []).length) return "有交通消息";
+  if ((board.live?.news?.value?.messages || []).length) return "有特別交通消息";
   if (!board.live?.speeds?.value) return "暫時未能更新";
-  return "沒有特別消息";
+  return "暫無特別消息";
 }
 
 function roadHtml(board) {
@@ -203,18 +212,18 @@ function roadHtml(board) {
     ? "<p>交通消息暫時未能更新。</p>"
     : messages.length
       ? messages.map((item) => `<p><strong>${escapeHtml(item.heading)}</strong> ${escapeHtml(item.detail)}</p>`).join("")
-      : "<p>沒有影響馬灣來回路線的特別消息。</p>";
+      : "<p>暫無影響往返馬灣路線的特別消息。</p>";
   const speedBody = (speeds.value?.roads || []).map((road) => `
     <p>${escapeHtml(road.road)} ${escapeHtml(road.speed)} 公里/小時</p>
-  `).join("") || "<p>這次沒有車速數字。</p>";
-  const journeyBody = (journey.value?.rows || []).map((row) => `<p>${escapeHtml(row.from)}去${escapeHtml(row.to)}約 ${escapeHtml(row.minutes)} 分鐘。</p>`).join("")
-    || "<p>未有南昌站去機場的時間。</p>";
+  `).join("") || "<p>暫無車速數據。</p>";
+  const journeyBody = (journey.value?.rows || []).length
+    ? `<p>南昌站往機場：${journey.value.rows.map((row) => `${escapeHtml(row.to.includes("三號") ? "三號幹線" : "八號幹線")}約 ${escapeHtml(row.minutes)} 分鐘`).join("，")}。上述時間並非馬灣島內車程。</p>`
+    : "<p>暫無南昌站往機場的行車時間。</p>";
   return `
     ${newsBody}
     ${speedBody}
-    <p>青馬大橋、汲水門大橋、青嶼幹線、馬灣路、長青公路沒有車速，只看消息同鏡頭。</p>
+    <p>青馬大橋、汲水門大橋、青嶼幹線、馬灣路及長青公路沒有車速，只顯示消息及閉路電視。</p>
     ${journeyBody}
-    <p>上面的分鐘由南昌站計，不是馬灣島內的車程。</p>
   `;
 }
 
@@ -222,13 +231,13 @@ function taxiCopy(taxi) {
   const openNow = taxi.status.startsWith("現在至晚上11時");
   if (openNow) {
     return {
-      summary: "而家至晚上 11 時可以入珀欣路",
-      body: "<p>市區的士可以去挪亞方舟正門。</p><p>馬灣路、芳園路一帶全日可以入。沒有許可證的私家車不可入。</p><p>貨車是上午 10 時至下午 4 時。旅遊巴是上午 9 時至晚上 11 時。</p>",
+      summary: "現時至晚上11時可駛入珀欣路",
+      body: "<p>市區的士可前往挪亞方舟正門。</p><p>馬灣路及芳園路一帶全日可通行。未領許可證的私家車不得進入。</p><p>貨車例外時段為上午10時至下午4時；旅遊巴士為上午9時至晚上11時。</p>",
     };
   }
   return {
-    summary: "而家珀欣路不准市區的士入",
-    body: "<p>珀欣路是上午 9 時至晚上 11 時先可以入。</p><p>馬灣路、芳園路一帶全日可以入。沒有許可證的私家車不可入。</p><p>貨車是上午 10 時至下午 4 時。旅遊巴是上午 9 時至晚上 11 時。</p>",
+    summary: "現時市區的士不可駛入珀欣路",
+    body: "<p>珀欣路只限上午9時至晚上11時駛入。</p><p>馬灣路及芳園路一帶全日可通行。未領許可證的私家車不得進入。</p><p>貨車例外時段為上午10時至下午4時；旅遊巴士為上午9時至晚上11時。</p>",
   };
 }
 
@@ -246,8 +255,8 @@ function render(options = {}) {
   const failed = state.refreshFailed ? " · 暫時未能更新" : "";
   clockEl.textContent = `${board.now.slice(11, 16)}${failed}`;
   setHtml(alertsEl, alertHtml(board));
-  setHtml(leaveEl, serviceLines(board, "from-mawan") + kmbLine(board, "from-mawan"));
-  setHtml(backEl, serviceLines(board, "to-mawan") + kmbLine(board, "to-mawan"));
+  setHtml(leaveEl, serviceLines(board, "from-mawan", BUS_ORDER) + kmbLine(board, "from-mawan") + serviceLines(board, "from-mawan", FERRY_ORDER));
+  setHtml(backEl, serviceLines(board, "to-mawan", BUS_ORDER) + kmbLine(board, "to-mawan") + serviceLines(board, "to-mawan", FERRY_ORDER));
   roadSummaryEl.textContent = roadHeadline(board);
   setHtml(roadBodyEl, roadHtml(board));
   updateCameras(board.live.cameras || []);
@@ -259,7 +268,7 @@ function render(options = {}) {
 
 function tick() {
   document.querySelectorAll("[data-iso]").forEach((el) => {
-    const parts = remainParts(el.dataset.iso, el.dataset.kind);
+    const parts = remainParts(el.dataset.iso, el.dataset.kind, el.dataset.compact === "1");
     const amount = el.querySelector(".amount");
     const verb = el.querySelector(".verb");
     if (!amount || !verb) return;

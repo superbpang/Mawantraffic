@@ -20,9 +20,9 @@ a { color: var(--sea); }
 button, summary { -webkit-tap-highlight-color: transparent; }
 
 .top, main, footer { width: min(720px, calc(100% - 24px)); margin-inline: auto; }
-.top { padding: 22px 0 4px; }
-h1 { margin: 0; font-size: 1.7rem; letter-spacing: -0.03em; }
-h2 { margin: 22px 0 8px; font-size: 1.05rem; }
+.top { padding: 16px 0 2px; }
+h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.03em; }
+h2 { margin: 14px 0 6px; font-size: 0.95rem; }
 .clock { margin: 4px 0 0; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .alerts { display: grid; gap: 8px; }
@@ -34,18 +34,18 @@ h2 { margin: 22px 0 8px; font-size: 1.05rem; }
 }
 .alert p { margin: 8px 0 0; }
 
-.lines { display: grid; gap: 8px; }
+.lines { display: grid; gap: 6px; }
 .fold {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 .fold summary {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: baseline;
-  gap: 4px 8px;
-  padding: 12px 14px 14px;
+  gap: 2px 8px;
+  padding: 8px 12px 10px;
   cursor: pointer;
   list-style: none;
 }
@@ -58,8 +58,9 @@ h2 { margin: 22px 0 8px; font-size: 1.05rem; }
   font-size: 0.82rem;
 }
 .fold[open] summary::after { content: "收起"; }
-.title { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; grid-column: 1; }
-.name { font-weight: 700; }
+.title { display: flex; gap: 10px; align-items: baseline; grid-column: 1; }
+.code, .name { font-weight: 700; }
+.code { min-width: 4.6em; font-variant-numeric: tabular-nums; }
 .where, .aside, .more, footer { color: var(--muted); }
 .aside { grid-column: 1 / -1; }
 
@@ -68,14 +69,14 @@ h2 { margin: 22px 0 8px; font-size: 1.05rem; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
 .times b, .times em { display: block; font-style: normal; }
 .times b { font-size: 1.15rem; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .times em { margin-top: 2px; color: var(--sea); font-size: 0.92rem; }
-.times .verb { display: block; }
+.times .verb:not(:empty) { display: block; }
 .times .tag { color: var(--muted); font-size: 0.78rem; }
 .none { margin: 8px 0 0; }
 
