@@ -2,6 +2,8 @@ const state = { board: null, refreshFailed: false, refreshing: false, open: {} }
 
 const leaveEl = document.querySelector("#leave");
 const backEl = document.querySelector("#back");
+const leaveSummaryEl = document.querySelector("#leave-summary");
+const backSummaryEl = document.querySelector("#back-summary");
 const alertsEl = document.querySelector("#alerts");
 const roadSummaryEl = document.querySelector("#road-summary");
 const roadBodyEl = document.querySelector("#road-body");
@@ -63,9 +65,10 @@ function formatAmount(amount) {
   return `<span>${hour[1]} 小時</span>${hour[2] ? `<span>${hour[2]} 分</span>` : ""}`;
 }
 
-function remainHtml(iso, kind, compact) {
+function remainHtml(iso, kind, compact, stacked = true) {
   const parts = remainParts(iso, kind, compact);
-  return `<span class="amount">${formatAmount(parts.amount)}</span><span class="verb">${escapeHtml(parts.verb)}</span>`;
+  const amount = stacked ? formatAmount(parts.amount) : escapeHtml(parts.amount);
+  return `<span class="amount">${amount}</span><span class="verb">${escapeHtml(parts.verb)}</span>`;
 }
 
 function shiftDate(day, days) {
@@ -85,19 +88,6 @@ function shortNote(note) {
   if (note.includes("港珠澳")) return "經香港口岸";
   if (note.includes("青衣站")) return "途經青衣站";
   return "";
-}
-
-function usefulNotes(notes) {
-  return (notes || []).flatMap((note) => {
-    if (note.includes("編定班次") || note.includes("碼頭關閘") || note.includes("每日服務") || note.includes("港鐵")) return [];
-    if (note.includes("班表摘要")) return ["上車站為中環碼頭近三號碼頭，途經香港站（民祥街）。"];
-    if (note.includes("臨海廣場")) return ["前往挪亞方舟的乘客在臨海廣場下車。"];
-    if (note.includes("通宵")) return ["此路線包括通宵班次。"];
-    if (note.includes("基慧")) return ["途經基慧小學。"];
-    if (note.includes("循環線")) return ["循環線，機場站開出時間僅供參考。"];
-    if (note.includes("二元")) return ["本路線不設居民票價，二元優惠不適用。"];
-    return [note.endsWith("。") ? note : `${note}。`];
-  });
 }
 
 function tripKind(trip) {
@@ -124,95 +114,121 @@ function staleNote(slot) {
     : "<p>未能更新。以下為較早的資料。</p>";
 }
 
-function tripItems(trips, today, compact) {
-  return trips.slice(0, 3).map((trip) => {
-    const iso = trip.time || trip.eta;
-    const kind = tripKind(trip);
-    const tag = shortNote(trip.note);
-    return `
-      <li>
-        <em data-iso="${escapeHtml(iso)}" data-kind="${kind}" data-compact="${compact ? "1" : ""}">${remainHtml(iso, kind, compact)}</em>
-        <b>${escapeHtml(whenText(iso, trip.clock, trip.dayLabel, today))}</b>
-        ${tag ? `<span class="tag">${escapeHtml(tag)}</span>` : ""}
-      </li>
-    `;
-  }).join("");
-}
-
-function lineHtml(id, code, stop, where, modeLabel, trips, today, more) {
-  const kinds = trips.map((trip) => tripKind(trip));
-  const compact = kinds.length > 0 && kinds.every((kind) => kind === kinds[0]);
-  const action = compact ? (kinds[0] === "arrive" ? "到達" : "開出") : "";
-  const meta = [modeLabel, action].filter(Boolean).join(" · ");
-  const kindClass = modeLabel === "渡輪" ? "ferry" : modeLabel === "九巴" ? "kmb" : "bus";
-  const times = trips.length
-    ? `<ol class="times">${tripItems(trips, today, compact)}</ol>`
-    : `<p class="none">暫無班次</p>`;
-  return `
-    <details class="fold route ${kindClass}" data-id="${escapeHtml(id)}" ${state.open[id] ? "open" : ""}>
-      <summary>
-        <span class="badge">${escapeHtml(code)}</span>
-        <span class="going">
-          <span class="stop">${escapeHtml(stop)}</span>
-          <span class="where">${escapeHtml(where)}</span>
-          ${meta ? `<span class="meta">${escapeHtml(meta)}</span>` : ""}
-        </span>
-        ${times}
-      </summary>
-      <div class="more">${more}</div>
-    </details>
-  `;
-}
-
 function boundLabel(destination) {
   if (destination.includes("珀欣")) return "往珀欣路";
   if (destination.includes("碼頭")) return "往珀麗灣碼頭";
   return "往珀麗灣";
 }
 
-function serviceLines(board, direction, ids) {
-  const today = hkDate(board.now);
-  const services = ids.map((id) => board.services.find((service) => service.id === id)).filter(Boolean);
-  return services.map((service) => {
-    const leg = service.directions[direction];
-    const place = DEST[service.id];
-    const where = direction === "from-mawan" ? `往${place}` : boundLabel(leg.destination);
-    const notes = usefulNotes(service.notes);
-    const meaning = service.mode === "ferry"
-      ? "所示時間為碼頭關閘時間，而非船隻到達時間。"
-      : "所示時間為表定開出時間，而非到達時間。";
-    const more = `
-      <p>由${escapeHtml(leg.boardStop)}開往${escapeHtml(leg.destination)}。</p>
-      <p>${meaning}</p>
-      ${notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}
-      <p><a href="${escapeHtml(service.sourceUrl)}">班表</a> · <a href="${escapeHtml(service.fareUrl)}">${escapeHtml(service.fareText)}</a></p>
-    `;
-    const modeLabel = service.mode === "ferry" ? "渡輪" : "巴士";
-    return lineHtml(`${service.id}-${direction}`, service.route, leg.boardStop, where, modeLabel, leg.upcoming, today, more);
-  }).join("");
+function serviceRow(board, direction, id) {
+  const service = board.services.find((item) => item.id === id);
+  if (!service) return null;
+  const leg = service.directions[direction];
+  const place = DEST[service.id];
+  return {
+    stop: leg.boardStop,
+    code: service.route,
+    where: direction === "from-mawan" ? `往${place}` : boundLabel(leg.destination),
+    kindClass: service.mode === "ferry" ? "ferry" : "bus",
+    trip: leg.upcoming[0] || null,
+    today: hkDate(board.now),
+    note: "",
+    href: service.sourceUrl,
+  };
 }
 
-function kmbLine(board, direction) {
-  const today = hkDate(board.now);
+function kmbRow(board, direction) {
   const slot = board.live?.kmb;
   const value = slot?.value;
-  const where = direction === "from-mawan" ? "往九龍站" : "往珀欣路";
-  const id = `kmb-${direction}`;
   const stop = !value
     ? (direction === "from-mawan" ? "馬灣（珀欣路）" : "九龍站")
     : (direction === "to-mawan" ? value.originTo : value.originFrom);
-  if (!value) {
-    return lineHtml(id, "230R", stop, where, "九巴", [], today, "<p>暫時未能讀取九巴到站時間。</p>");
+  const trip = value
+    ? value.trips.filter((item) => item.direction === direction)[0] || null
+    : null;
+  let note = "";
+  if (!value) note = "暫時未能讀取九巴到站時間。";
+  else if (slot?.stale) {
+    const time = clockOf(slot.fetchedAt);
+    note = time ? `未能更新。以下為 ${time} 的資料。` : "未能更新。以下為較早的資料。";
   }
-  const trips = value.trips.filter((trip) => trip.direction === direction).slice(0, 3);
-  const dest = direction === "to-mawan" ? value.destinationTo : value.destinationFrom;
-  const more = `
-    <p>九巴，由${escapeHtml(stop)}開往${escapeHtml(dest)}。</p>
-    <p>沒有備註的班次為預計到達時間；標明「原定班次」的為表定開出時間。</p>
-    ${staleNote(slot)}
-    <p><a href="${escapeHtml(value.fareUrl)}">${escapeHtml(value.fareText)}</a></p>
+  return {
+    stop,
+    code: "230R",
+    where: direction === "from-mawan" ? "往九龍站" : "往珀欣路",
+    kindClass: "kmb",
+    trip,
+    today: hkDate(board.now),
+    note,
+    href: value?.fareUrl || "https://search.kmb.hk/KMBWebSite/?action=routesearch&route=230R",
+  };
+}
+
+function directionRows(board, direction) {
+  return [
+    ...BUS_ORDER.map((id) => serviceRow(board, direction, id)),
+    kmbRow(board, direction),
+    ...FERRY_ORDER.map((id) => serviceRow(board, direction, id)),
+  ].filter(Boolean);
+}
+
+function waitHtml(row) {
+  const trip = row.trip;
+  const iso = trip?.time || trip?.eta;
+  if (!iso) return `<span class="none">暫無班次</span>`;
+  const kind = tripKind(trip);
+  const action = kind === "arrive" ? "到達" : "開出";
+  return `
+    <em data-iso="${escapeHtml(iso)}" data-kind="${kind}" data-compact="1">${remainHtml(iso, kind, true)}</em>
+    <b>${escapeHtml(whenText(iso, trip.clock, trip.dayLabel, row.today))}</b>
+    <span class="act">${action}</span>
   `;
-  return lineHtml(id, "230R", stop, where, "九巴", trips, today, more);
+}
+
+function rowHtml(row) {
+  const tag = shortNote(row.trip?.note);
+  return `
+    <li class="depart ${row.kindClass}">
+      <span class="badge">${escapeHtml(row.code)}</span>
+      <span class="going">
+        <span class="where">${escapeHtml(row.where)}</span>
+        ${tag ? `<span class="tag">${escapeHtml(tag)}</span>` : ""}
+        ${row.note ? `<span class="note">${escapeHtml(row.note)}</span>` : ""}
+        <a href="${escapeHtml(row.href)}">班表</a>
+      </span>
+      <span class="wait">${waitHtml(row)}</span>
+    </li>
+  `;
+}
+
+function stopKey(stop) {
+  return String(stop).replaceAll("（", "(").replaceAll("）", ")");
+}
+
+function directionHtml(rows) {
+  const groups = [];
+  rows.forEach((row) => {
+    const last = groups[groups.length - 1];
+    if (!last || stopKey(last.stop) !== stopKey(row.stop)) groups.push({ stop: row.stop, rows: [row] });
+    else last.rows.push(row);
+  });
+  return groups.map((group) => `
+    <section class="stop-block">
+      <h3>${escapeHtml(group.stop)}</h3>
+      <ul>${group.rows.map(rowHtml).join("")}</ul>
+    </section>
+  `).join("");
+}
+
+function soonestHtml(rows) {
+  const ranked = rows
+    .map((row) => ({ row, iso: row.trip?.time || row.trip?.eta || "" }))
+    .filter((item) => item.iso)
+    .sort((a, b) => new Date(a.iso) - new Date(b.iso));
+  if (!ranked.length) return "暫無班次";
+  const { row, iso } = ranked[0];
+  const kind = tripKind(row.trip);
+  return `${escapeHtml(row.code)}　${escapeHtml(row.stop)}　<em data-iso="${escapeHtml(iso)}" data-kind="${kind}" data-compact="1" data-flat="1">${remainHtml(iso, kind, true, false)}</em>`;
 }
 
 function alertHtml(board) {
@@ -304,8 +320,12 @@ function render(options = {}) {
   timeEl.textContent = board.now.slice(11, 16);
   failEl.textContent = state.refreshFailed ? "暫時未能更新" : "";
   setHtml(alertsEl, alertHtml(board));
-  setHtml(leaveEl, serviceLines(board, "from-mawan", BUS_ORDER) + kmbLine(board, "from-mawan") + serviceLines(board, "from-mawan", FERRY_ORDER));
-  setHtml(backEl, serviceLines(board, "to-mawan", BUS_ORDER) + kmbLine(board, "to-mawan") + serviceLines(board, "to-mawan", FERRY_ORDER));
+  const leaveRows = directionRows(board, "from-mawan");
+  const backRows = directionRows(board, "to-mawan");
+  setHtml(leaveEl, directionHtml(leaveRows));
+  setHtml(backEl, directionHtml(backRows));
+  leaveSummaryEl.innerHTML = soonestHtml(leaveRows);
+  backSummaryEl.innerHTML = soonestHtml(backRows);
   roadSummaryEl.innerHTML = roadHeadline(board);
   setHtml(roadBodyEl, roadHtml(board));
   updateCameras(board.live.cameras || []);
@@ -318,7 +338,7 @@ function tick() {
     const amount = el.querySelector(".amount");
     const verb = el.querySelector(".verb");
     if (!amount || !verb) return;
-    amount.innerHTML = formatAmount(parts.amount);
+    amount.innerHTML = el.dataset.flat === "1" ? escapeHtml(parts.amount) : formatAmount(parts.amount);
     verb.textContent = parts.verb;
   });
 }

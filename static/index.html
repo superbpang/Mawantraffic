@@ -13,14 +13,20 @@
   </header>
   <main>
     <section id="alerts" class="alerts" aria-live="polite"></section>
-    <section class="direction" aria-labelledby="leave-title">
-      <h2 id="leave-title">離開馬灣</h2>
-      <div id="leave" class="lines"></div>
-    </section>
-    <section class="direction" aria-labelledby="back-title">
-      <h2 id="back-title">往馬灣</h2>
-      <div id="back" class="lines"></div>
-    </section>
+    <details class="fold panel direction" data-id="leave" open>
+      <summary>
+        <span class="name">離開馬灣</span>
+        <span id="leave-summary" class="aside"></span>
+      </summary>
+      <div id="leave" class="stops"></div>
+    </details>
+    <details class="fold panel direction" data-id="back" open>
+      <summary>
+        <span class="name">往馬灣</span>
+        <span id="back-summary" class="aside"></span>
+      </summary>
+      <div id="back" class="stops"></div>
+    </details>
     <details id="road" class="fold panel" data-id="road">
       <summary>
         <span class="name">路面</span>
