@@ -1,0 +1,436 @@
+[
+  {
+    "id": "AID03106",
+    "name": "西九龍公路近百周年變電站 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.30780401,
+    "longitude": 114.1607347
+  },
+  {
+    "id": "AID03107",
+    "name": "西九龍公路近奧海公園 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.31424287,
+    "longitude": 114.1611901
+  },
+  {
+    "id": "AID03108",
+    "name": "西九龍公路近港鐵奧運站 - 北行 (1) ",
+    "group": "wkh",
+    "latitude": 22.31770145,
+    "longitude": 114.1598309
+  },
+  {
+    "id": "AID03109",
+    "name": "西九龍公路近港鐵奧運站 - 北行 (2) ",
+    "group": "wkh",
+    "latitude": 22.31936301,
+    "longitude": 114.159093
+  },
+  {
+    "id": "AID03110",
+    "name": "西九龍公路近大角咀變電站 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.32431136,
+    "longitude": 114.1556952
+  },
+  {
+    "id": "AID03111",
+    "name": "西九龍公路近港鐵南昌站 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.32713749,
+    "longitude": 114.152511
+  },
+  {
+    "id": "AID03112",
+    "name": "西九龍公路近興華街西 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.32897925,
+    "longitude": 114.1495114
+  },
+  {
+    "id": "AID03113",
+    "name": "西九龍公路近聖公會聖安德烈小學 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.33021588,
+    "longitude": 114.1463564
+  },
+  {
+    "id": "AID03114",
+    "name": "西九龍公路近青沙公路 - 北行 ",
+    "group": "wkh",
+    "latitude": 22.33166006,
+    "longitude": 114.1427743
+  },
+  {
+    "id": "AID03203",
+    "name": "西九龍公路近海麗邨 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.33282441,
+    "longitude": 114.1400755
+  },
+  {
+    "id": "AID03204",
+    "name": "西九龍公路近興華街 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.32936742,
+    "longitude": 114.1486862
+  },
+  {
+    "id": "AID03205",
+    "name": "西九龍公路近港鐵南昌站 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.32683954,
+    "longitude": 114.1529091
+  },
+  {
+    "id": "AID03206",
+    "name": "西九龍公路近大角咀變電站 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.32400436,
+    "longitude": 114.1559767
+  },
+  {
+    "id": "AID03207",
+    "name": "西九龍公路近奧海城海濱公園 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.32131349,
+    "longitude": 114.1580057
+  },
+  {
+    "id": "AID03208",
+    "name": "西九龍公路近港鐵奧運站 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.31895665,
+    "longitude": 114.1592872
+  },
+  {
+    "id": "AID03209",
+    "name": "西九龍公路近海輝道海濱公園 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.31687971,
+    "longitude": 114.1601707
+  },
+  {
+    "id": "AID03210",
+    "name": "西九龍公路近奧海公園 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.31468536,
+    "longitude": 114.1610542
+  },
+  {
+    "id": "AID03211",
+    "name": "西九龍公路近百周年變電站 - 南行 ",
+    "group": "wkh",
+    "latitude": 22.30700933,
+    "longitude": 114.1609192
+  },
+  {
+    "id": "AID08101",
+    "name": "北大嶼山公路近欣澳灣 - 西行 (1) ",
+    "group": "nlh",
+    "latitude": 22.32759229,
+    "longitude": 114.0253264
+  },
+  {
+    "id": "AID08102",
+    "name": "北大嶼山公路近欣澳灣 - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.32524015,
+    "longitude": 114.0209125
+  },
+  {
+    "id": "AID08103",
+    "name": "北大嶼山公路近欣澳石灘 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.32500998,
+    "longitude": 114.0163896
+  },
+  {
+    "id": "AID08104",
+    "name": "北大嶼山公路深水角配電站 - 西行 (1) ",
+    "group": "nlh",
+    "latitude": 22.32477045,
+    "longitude": 114.0116823
+  },
+  {
+    "id": "AID08105",
+    "name": "北大嶼山公路深水角配電站 - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.32306814,
+    "longitude": 114.0072583
+  },
+  {
+    "id": "AID08106",
+    "name": "北大嶼山公路深水角配電站 - 西行 (3) ",
+    "group": "nlh",
+    "latitude": 22.32110394,
+    "longitude": 114.0029415
+  },
+  {
+    "id": "AID08107",
+    "name": "北大嶼山公路近東葉坑 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.31859822,
+    "longitude": 113.9990234
+  },
+  {
+    "id": "AID08108",
+    "name": "北大嶼山公路近警察車輛扣留中心 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.31529949,
+    "longitude": 113.9966885
+  },
+  {
+    "id": "AID08109",
+    "name": "北大嶼山公路近小蠔灣污水處理廠 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.31208994,
+    "longitude": 113.9933928
+  },
+  {
+    "id": "AID08110",
+    "name": "北大嶼山公路近小蠔灣政府維修廠 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.30943884,
+    "longitude": 113.988893
+  },
+  {
+    "id": "AID08111",
+    "name": "北大嶼山公路近港鐵小蠔灣車廠 - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.30703196,
+    "longitude": 113.9848395
+  },
+  {
+    "id": "AID08112",
+    "name": "北大嶼山公路近大蠔灣 - 西行 (1) ",
+    "group": "nlh",
+    "latitude": 22.30453478,
+    "longitude": 113.9808736
+  },
+  {
+    "id": "AID08113",
+    "name": "北大嶼山公路近大蠔灣 - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.30216382,
+    "longitude": 113.9768204
+  },
+  {
+    "id": "AID08114",
+    "name": "北大嶼山公路近大蠔灣 - 西行 (3) ",
+    "group": "nlh",
+    "latitude": 22.30009053,
+    "longitude": 113.9725727
+  },
+  {
+    "id": "AID08115",
+    "name": "北大嶼山公路近大蠔灣 - 西行 (4) ",
+    "group": "nlh",
+    "latitude": 22.29876627,
+    "longitude": 113.9680232
+  },
+  {
+    "id": "AID08116",
+    "name": "北大嶼山公路近大蠔灣 - 西行 (5) ",
+    "group": "nlh",
+    "latitude": 22.29795784,
+    "longitude": 113.964395
+  },
+  {
+    "id": "AID08117",
+    "name": "北大嶼山公路近迎東邨 - 西行 (1) ",
+    "group": "nlh",
+    "latitude": 22.29637847,
+    "longitude": 113.9583322
+  },
+  {
+    "id": "AID08118",
+    "name": "北大嶼山公路近迎東邨 - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.29463146,
+    "longitude": 113.9552975
+  },
+  {
+    "id": "AID08119",
+    "name": "北大嶼山公路近映灣園1期 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.29247886,
+    "longitude": 113.9528748
+  },
+  {
+    "id": "AID08120",
+    "name": "北大嶼山公路近映灣園3期 - 西行 ",
+    "group": "nlh",
+    "latitude": 22.29024412,
+    "longitude": 113.9498605
+  },
+  {
+    "id": "AID08121",
+    "name": "北大嶼山公路近東涌(北) - 西行 (1) ",
+    "group": "nlh",
+    "latitude": 22.28950534,
+    "longitude": 113.9446992
+  },
+  {
+    "id": "AID08122",
+    "name": "北大嶼山公路近東涌(北) - 西行 (2) ",
+    "group": "nlh",
+    "latitude": 22.29100001,
+    "longitude": 113.940662
+  },
+  {
+    "id": "AID08201",
+    "name": "北大嶼山公路近東涌(北) - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.29380308,
+    "longitude": 113.9379186
+  },
+  {
+    "id": "AID08202",
+    "name": "北大嶼山公路近東涌(北) - 東行(2) ",
+    "group": "nlh",
+    "latitude": 22.29190915,
+    "longitude": 113.9396104
+  },
+  {
+    "id": "AID08203",
+    "name": "北大嶼山公路近東涌(北) - 東行(3) ",
+    "group": "nlh",
+    "latitude": 22.28960394,
+    "longitude": 113.9441848
+  },
+  {
+    "id": "AID08204",
+    "name": "北大嶼山公路近映灣園1期 - 東行 ",
+    "group": "nlh",
+    "latitude": 22.28973677,
+    "longitude": 113.9486968
+  },
+  {
+    "id": "AID08205",
+    "name": "北大嶼山公路近映灣園3期 - 東行 ",
+    "group": "nlh",
+    "latitude": 22.29210812,
+    "longitude": 113.9525261
+  },
+  {
+    "id": "AID08206",
+    "name": "北大嶼山公路近迎東邨 - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.29488468,
+    "longitude": 113.9555688
+  },
+  {
+    "id": "AID08207",
+    "name": "北大嶼山公路近迎東邨 - 東行 (2) ",
+    "group": "nlh",
+    "latitude": 22.29654157,
+    "longitude": 113.9587395
+  },
+  {
+    "id": "AID08208",
+    "name": "北大嶼山公路近大蠔灣 - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.29737647,
+    "longitude": 113.9618048
+  },
+  {
+    "id": "AID08209",
+    "name": "北大嶼山公路近大蠔灣 - 東行 (2) ",
+    "group": "nlh",
+    "latitude": 22.29830307,
+    "longitude": 113.9659763
+  },
+  {
+    "id": "AID08210",
+    "name": "北大嶼山公路近大蠔灣 - 東行 (3) ",
+    "group": "nlh",
+    "latitude": 22.29954683,
+    "longitude": 113.9710984
+  },
+  {
+    "id": "AID08211",
+    "name": "北大嶼山公路近大蠔灣 - 東行 (4) ",
+    "group": "nlh",
+    "latitude": 22.30121328,
+    "longitude": 113.974939
+  },
+  {
+    "id": "AID08212",
+    "name": "北大嶼山公路近大蠔灣 - 東行 (5) ",
+    "group": "nlh",
+    "latitude": 22.30343091,
+    "longitude": 113.9791089
+  },
+  {
+    "id": "AID08213",
+    "name": "北大嶼山公路近港鐵小蠔灣車廠 - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.3059191,
+    "longitude": 113.9830747
+  },
+  {
+    "id": "AID08214",
+    "name": "北大嶼山公路近港鐵小蠔灣車廠 - 東行 (2) ",
+    "group": "nlh",
+    "latitude": 22.30812677,
+    "longitude": 113.9866335
+  },
+  {
+    "id": "AID08215",
+    "name": "北大嶼山公路近港鐵小蠔灣車廠 - 東行 (3) ",
+    "group": "nlh",
+    "latitude": 22.31047944,
+    "longitude": 113.9907065
+  },
+  {
+    "id": "AID08216",
+    "name": "北大嶼山公路近小蠔灣污水處理廠 - 東行 ",
+    "group": "nlh",
+    "latitude": 22.31342831,
+    "longitude": 113.9950313
+  },
+  {
+    "id": "AID08218",
+    "name": "北大嶼山公路近東葉坑 - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.32018982,
+    "longitude": 114.0010597
+  },
+  {
+    "id": "AID08219",
+    "name": "北大嶼山公路近東葉坑 - 東行 (2) ",
+    "group": "nlh",
+    "latitude": 22.32220823,
+    "longitude": 114.0053472
+  },
+  {
+    "id": "AID08220",
+    "name": "北大嶼山公路近東葉坑 - 東行 (3) ",
+    "group": "nlh",
+    "latitude": 22.32410918,
+    "longitude": 114.0096836
+  },
+  {
+    "id": "AID08221",
+    "name": "北大嶼山公路近打棚埔 - 東行 ",
+    "group": "nlh",
+    "latitude": 22.32509802,
+    "longitude": 114.0141182
+  },
+  {
+    "id": "AID08222",
+    "name": "北大嶼山公路近欣澳灣 - 東行 (1) ",
+    "group": "nlh",
+    "latitude": 22.32494041,
+    "longitude": 114.0191172
+  },
+  {
+    "id": "AID08223",
+    "name": "北大嶼山公路近欣澳灣 - 東行 (2) ",
+    "group": "nlh",
+    "latitude": 22.32582877,
+    "longitude": 114.0226202
+  }
+]
