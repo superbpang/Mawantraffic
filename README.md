@@ -13,8 +13,22 @@ python3 server.py
 然後開啟 <http://127.0.0.1:8080>。頁面同時列出兩個方向。
 
 ```bash
-python3 -m unittest tests.test_board
+python3 -m unittest tests.test_board tests.test_worker_parity
 ```
+
+## Cloudflare Workers
+
+Worker 名稱是 `mawan-traffic`。公開網址是 <https://mawan-traffic.superbpang.workers.dev>。這不是 `hk-smart-city-map`。
+
+`/api/board` 和 `/cameras/<id>.jpg` 由 Worker 計算。班表來自 `scripts/export_schedule.py` 匯出的 `src/schedule.json`，規則與 `catalog.py` 對照。改班表後要重新匯出。`wrangler.jsonc` 把 `static/` 設成 Workers 靜態資源。若這次部署沒有附上資源層，Worker 會送出同一份首頁、樣式和腳本。
+
+```bash
+python3 scripts/export_schedule.py
+npx wrangler login
+npx wrangler deploy
+```
+
+`npx wrangler deploy` 使用 Wrangler 4.166.0。沒有登入時，非互動環境會要求 `CLOUDFLARE_API_TOKEN`，不要把權杖寫進專案。
 
 班表在 `catalog.py`，每條路線帶有來源網址、生效日期和 2026-11-21 的擷取日期。2026 年公眾假期來自香港政府一站通，頁尾修訂日期為 2025 年 5 月。2027 年同一來源，頁尾修訂日期為 2026 年 5 月。其他年份會標明假期表未涵蓋，不會當成平日。
 

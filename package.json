@@ -1,0 +1,14 @@
+{
+  "name": "mawan-traffic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export-schedule": "python3 scripts/export_schedule.py",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "dry-run": "wrangler deploy --dry-run --outdir dist/worker"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}
